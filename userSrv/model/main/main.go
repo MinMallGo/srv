@@ -6,14 +6,25 @@ import (
 	"encoding/hex"
 	"fmt"
 	"golang.org/x/crypto/pbkdf2"
+	"gorm.io/gorm"
 	"hash"
 	"srv/userSrv/global"
 	"srv/userSrv/model"
+	"strconv"
+	"time"
+)
+
+var (
+	DefaultSaltLen   = 10
+	DefaultIter      = 100
+	DefaultKeyLen    = 32
+	DefaultCryptFunc = sha512.New
 )
 
 func main() {
-	migrate()
-	pwdEncrypt("gen password")
+	//migrate()
+	//pwdEncrypt("gen password")
+	genUser()
 }
 
 func migrate() {
@@ -35,17 +46,16 @@ type passwordEncrypt struct {
 // pbkdf2
 func pwdEncrypt(pwd string) string {
 	opts := &passwordEncrypt{
-		saltLen: 10,
-		iter:    100,
-		keyLen:  32,
-		h:       sha512.New,
+		saltLen: DefaultSaltLen,
+		iter:    DefaultIter,
+		keyLen:  DefaultKeyLen,
+		h:       DefaultCryptFunc,
 	}
 
 	// $algorithm$salt$password
 	salt, encodePsw := gen(pwd, opts)
 	fmt.Printf("%#v\n", verify(pwd, salt, encodePsw, opts))
 	encodePsw = fmt.Sprintf("$pbkdf2-sha256$%s$%s", salt, encodePsw)
-	fmt.Println(len(encodePsw))
 	return encodePsw
 }
 
@@ -64,4 +74,33 @@ func genSalt(strlen int) string {
 	b := make([]byte, strlen)
 	_, _ = rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+func genUser() {
+	var user []model.User
+	birthday := time.Date(2000, time.July, 1, 0, 0, 0, 0, time.UTC)
+	for i := 0; i < 10; i++ {
+		user = append(user, model.User{
+			Mobile:   "1762324000" + strconv.Itoa(i),
+			Password: pwdEncrypt("123456"),
+			NickName: "batch_add_" + strconv.Itoa(i),
+			Birthday: &birthday,
+			Gender:   "female",
+			Role:     1,
+		})
+	}
+
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		for _, user := range user {
+			err := tx.Create(&user).Error
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		panic(err)
+	}
 }

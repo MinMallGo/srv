@@ -128,6 +128,7 @@ func (x *UserListResponse) GetData() []*UserInfoResponse {
 
 type MobileRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Mobile        string                 `protobuf:"bytes,1,opt,name=mobile,proto3" json:"mobile,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -160,6 +161,13 @@ func (x *MobileRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use MobileRequest.ProtoReflect.Descriptor instead.
 func (*MobileRequest) Descriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *MobileRequest) GetMobile() string {
+	if x != nil {
+		return x.Mobile
+	}
+	return ""
 }
 
 type UserInfoResponse struct {
@@ -533,8 +541,9 @@ const file_user_proto_rawDesc = "" +
 	"\x04size\x18\x02 \x01(\rR\x04size\"O\n" +
 	"\x10UserListResponse\x12\x14\n" +
 	"\x05total\x18\x01 \x01(\x04R\x05total\x12%\n" +
-	"\x04data\x18\x02 \x03(\v2\x11.UserInfoResponseR\x04data\"\x0f\n" +
-	"\rMobileRequest\"\xba\x01\n" +
+	"\x04data\x18\x02 \x03(\v2\x11.UserInfoResponseR\x04data\"'\n" +
+	"\rMobileRequest\x12\x16\n" +
+	"\x06mobile\x18\x01 \x01(\tR\x06mobile\"\xba\x01\n" +
 	"\x10UserInfoResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\x04R\x02id\x12\x16\n" +
 	"\x06Mobile\x18\x02 \x01(\tR\x06Mobile\x12\x1a\n" +

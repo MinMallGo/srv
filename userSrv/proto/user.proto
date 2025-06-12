@@ -19,7 +19,9 @@ message UserListResponse{
   uint64 total = 1;
   repeated UserInfoResponse data = 2;
 }
-message MobileRequest{}
+message MobileRequest{
+  string mobile = 1;
+}
 message UserInfoResponse{
   uint64 id = 1;
   string Mobile = 2;
