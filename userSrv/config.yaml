@@ -1,0 +1,10 @@
+mysql:
+  host: 127.0.0.1
+  port: 3306
+  username: root
+  password: root
+  database: shop_user_srv
+consul:
+  host: 192.168.3.5
+  port: 8500
+name: 'user-service'
