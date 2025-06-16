@@ -17,7 +17,7 @@ type RegArgs struct {
 
 var consulAddr string
 
-func RegisterConsul(arg *RegArgs) {
+func RegisterConsul(arg *RegArgs) *api.Client {
 	consulAddr = fmt.Sprintf("%s:%d", global.SrvConfig.Consul.Host, global.SrvConfig.Consul.Port)
 	config := api.DefaultConfig()
 	config.Address = consulAddr
@@ -42,21 +42,8 @@ func RegisterConsul(arg *RegArgs) {
 			DeregisterCriticalServiceAfter: "10s",
 		},
 	})
-
-	zap.S().Infof("%#v", api.AgentServiceRegistration{
-		ID:      arg.ID,
-		Name:    arg.Name,
-		Tags:    arg.Tags,
-		Port:    arg.Port,
-		Address: arg.Address,
-		Check: &api.AgentServiceCheck{
-			Interval:                       "5s",
-			Timeout:                        "5s",
-			GRPC:                           health,
-			DeregisterCriticalServiceAfter: "10s",
-		},
-	})
 	if err != nil {
 		panic(err)
 	}
+	return client
 }

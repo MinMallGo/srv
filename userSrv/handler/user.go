@@ -6,6 +6,7 @@ import (
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/pbkdf2"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -120,7 +121,7 @@ func (u *UserServer) GetUserList(ctx context.Context, info *proto.PaginateInfo) 
 		tmp := User2Response(user)
 		resp.Data = append(resp.Data, tmp)
 	}
-
+	zap.L().Info("获取用户列表")
 	return resp, nil
 }
 

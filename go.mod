@@ -5,6 +5,7 @@ go 1.23.8
 toolchain go1.23.10
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.32.1
 	github.com/spf13/viper v1.20.1
 	go.uber.org/zap v1.27.0
