@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/signal"
 	"srv/goodsSrv/global"
+	"srv/goodsSrv/handler"
 	"srv/goodsSrv/initialize"
 	"srv/goodsSrv/proto/gen"
 	"syscall"
@@ -45,9 +46,10 @@ func main() {
 	go func() {
 		server := grpc.NewServer()
 		//
-		proto.RegisterBrandServer(server, new(proto.UnimplementedBrandServer))
-		proto.RegisterCategoryBrandServer(server, new(proto.UnimplementedCategoryBrandServer))
+		proto.RegisterBrandServer(server, new(handler.BrandServer))
 		proto.RegisterBannerServer(server, new(proto.UnimplementedBannerServer))
+		proto.RegisterCategoryBrandServer(server, new(proto.UnimplementedCategoryBrandServer))
+
 		proto.RegisterGoodsServer(server, new(proto.UnimplementedGoodsServer))
 		proto.RegisterCategoryServer(server, new(proto.UnimplementedCategoryServer))
 		//
