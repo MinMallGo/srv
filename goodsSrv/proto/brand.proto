@@ -1,0 +1,40 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+option go_package = ".;proto";
+
+service Brand {
+  // 分类
+  rpc CreateBrand(CreateBrandInfo) returns (BrandInfoResponse);
+  rpc DeleteBrand(DeleteBrandInfo) returns(google.protobuf.Empty);
+  rpc UpdateBrand(UpdateBrandInfo) returns (google.protobuf.Empty);
+  rpc BrandList(BrandInfoRequest) returns (BrandListResponse);
+}
+
+message CreateBrandInfo{
+  string Name = 1;
+  string Logo = 2;
+};
+message BrandInfoResponse{
+  int32  ID = 1;
+  string Name = 2;
+  string Logo = 3;
+};
+message DeleteBrandInfo{
+  int32 id = 1;
+};
+message UpdateBrandInfo{
+  int32  ID = 1;
+  string  Name = 2;
+  string Logo = 3;
+};
+message BrandInfoRequest{
+  int32  ID = 1;
+  string Name = 2;
+  int32 Page = 3;
+  int32 PageSize = 4;
+};
+message BrandListResponse{
+  int32 total = 1;
+  repeated BrandInfoResponse data = 3;
+};
+

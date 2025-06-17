@@ -1,0 +1,53 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+option go_package = ".;proto";
+
+service Category {
+  // 分类
+  rpc CreateCategory(CreateCategoryInfo) returns (CategoryInfoResponse);
+  rpc DeleteCategory(DeleteCategoryInfo) returns(google.protobuf.Empty);
+  rpc UpdateCategory(UpdateCategoryInfo) returns (google.protobuf.Empty);
+  rpc GetSubCategory(CategoryInfoRequest) returns (SubCategoryListResponse);
+  rpc GetAllCategories(google.protobuf.Empty) returns (CategoryListResponse);
+}
+
+message CreateCategoryInfo{
+  string  Name = 1;
+  int32  ParentCategoryID = 2;
+  int32  Level = 3;
+  int32  IsTab = 4;
+};
+message CategoryInfoResponse{
+  int32  ID = 1;
+  string Name = 2;
+  int32  ParentCategoryID = 3;
+  int32  Level = 4;
+  int32  IsTab = 5;
+};
+message DeleteCategoryInfo{
+  int32 id = 1;
+};
+message UpdateCategoryInfo{
+  int32  ID = 1;
+  string  Name = 2;
+  int32  ParentCategoryID = 3;
+  int32  Level = 4;
+  int32  IsTab = 5;
+};
+message CategoryInfoRequest{
+  int32  ID = 1;
+  string Name = 2;
+  int32  ParentCategoryID = 3;
+  int32  Level = 4;
+  int32  IsTab = 5;
+};
+message SubCategoryListResponse{
+  int32 total = 1;
+  CategoryInfoResponse data = 2;
+  repeated CategoryInfoResponse subCategories1 = 3;
+};
+message CategoryListResponse{
+  int32 total = 1;
+  repeated CategoryInfoResponse data = 2;
+  string jsonData = 3;
+};

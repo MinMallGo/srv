@@ -1,0 +1,43 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+option go_package = ".;proto";
+
+service Banner {
+  // 分类
+  rpc CreateBanner(CreateBannerInfo) returns (BannerInfoResponse);
+  rpc DeleteBanner(DeleteBannerInfo) returns(google.protobuf.Empty);
+  rpc UpdateBanner(UpdateBannerInfo) returns (google.protobuf.Empty);
+  rpc BannerList(BannerInfoRequest) returns (BannerListResponse);
+}
+
+message CreateBannerInfo{
+  string Image = 1;
+  string Url = 2;
+  string Index = 4;
+};
+message BannerInfoResponse{
+  int32  ID = 1;
+  string Image = 2;
+  string Url = 3;
+  string Index = 4;
+};
+message DeleteBannerInfo{
+  int32 id = 1;
+};
+message UpdateBannerInfo{
+  int32  ID = 1;
+  string  Image = 2;
+  string Url = 3;
+  string Index = 4;
+};
+message BannerInfoRequest{
+  int32  ID = 1;
+  string Image = 2;
+  int32 Page = 3;
+  int32 PageSize = 4;
+};
+message BannerListResponse{
+  int32 total = 1;
+  repeated BannerInfoResponse data = 3;
+};
+

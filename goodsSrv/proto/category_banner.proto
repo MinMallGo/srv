@@ -1,0 +1,46 @@
+syntax = "proto3";
+import "google/protobuf/empty.proto";
+option go_package = ".;proto";
+
+service CategoryBrand {
+  // 分类
+  rpc CreateCategoryBrand(CreateCategoryBrandInfo) returns (CategoryBrandResponse);
+  rpc DeleteCategoryBrand(DeleteCategoryBrandInfo) returns(google.protobuf.Empty);
+  rpc UpdateCategoryBrand(UpdateCategoryBrandInfo) returns (google.protobuf.Empty);
+  rpc CategoryBrandList(CategoryBrandInfoRequest) returns (CategoryBrandListResponse);
+  rpc GetCategoryBrand(CategoryBraidRequest) returns (CategoryBrandResponse);
+}
+
+message CreateCategoryBrandInfo{
+  int32 id = 1;
+  int32 category_id = 2;
+  int32 braid_id = 3;
+};
+message CategoryBrandResponse{
+  int32 id = 1;
+  int32 category_id = 2;
+  int32 braid_id = 3;
+};
+message DeleteCategoryBrandInfo{
+  int32 id = 1;
+};
+message UpdateCategoryBrandInfo{
+  int32 id = 1;
+  int32 category_id = 2;
+  int32 braid_id = 3;
+};
+message CategoryBrandInfoRequest{
+  int32 id = 1;
+  int32 category_id = 2;
+  int32 braid_id = 3;
+};
+message CategoryBrandListResponse{
+  int32 total = 1;
+  repeated CategoryBrandResponse data = 3;
+};
+
+message CategoryBraidRequest{
+  int32 id = 1;
+  int32 category_id = 2;
+  int32 braid_id = 3;
+};
