@@ -49,7 +49,7 @@ func main() {
 		proto.RegisterBrandServer(server, new(handler.BrandServer))
 		proto.RegisterBannerServer(server, new(handler.BannerServer))
 		proto.RegisterCategoryServer(server, new(handler.CategoryServer))
-		proto.RegisterCategoryBrandServer(server, new(proto.UnimplementedCategoryBrandServer))
+		proto.RegisterCategoryBrandServer(server, new(handler.CategoryBrandServer))
 		proto.RegisterGoodsServer(server, new(proto.UnimplementedGoodsServer))
 
 		//

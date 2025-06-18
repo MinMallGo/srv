@@ -1,5 +1,7 @@
 syntax = "proto3";
 import "google/protobuf/empty.proto";
+import "brand.proto";
+import "category.proto";
 option go_package = ".;proto";
 
 service CategoryBrand {
@@ -8,18 +10,20 @@ service CategoryBrand {
   rpc DeleteCategoryBrand(DeleteCategoryBrandInfo) returns(google.protobuf.Empty);
   rpc UpdateCategoryBrand(UpdateCategoryBrandInfo) returns (google.protobuf.Empty);
   rpc CategoryBrandList(CategoryBrandInfoRequest) returns (CategoryBrandListResponse);
-  rpc GetCategoryBrand(CategoryBraidRequest) returns (CategoryBrandResponse);
+  rpc GetCategoryBrand(CategoryBrandRequest) returns (CategoryBrandResponse);
 }
 
 message CreateCategoryBrandInfo{
   int32 id = 1;
   int32 category_id = 2;
-  int32 braid_id = 3;
+  int32 brand_id = 3;
 };
 message CategoryBrandResponse{
   int32 id = 1;
   int32 category_id = 2;
-  int32 braid_id = 3;
+  int32 brand_id = 3;
+  BrandInfoResponse brand = 4;
+  CategoryInfoResponse category = 5;
 };
 message DeleteCategoryBrandInfo{
   int32 id = 1;
@@ -27,20 +31,20 @@ message DeleteCategoryBrandInfo{
 message UpdateCategoryBrandInfo{
   int32 id = 1;
   int32 category_id = 2;
-  int32 braid_id = 3;
+  int32 brand_id = 3;
 };
 message CategoryBrandInfoRequest{
   int32 id = 1;
   int32 category_id = 2;
-  int32 braid_id = 3;
+  int32 brand_id = 3;
 };
 message CategoryBrandListResponse{
   int32 total = 1;
   repeated CategoryBrandResponse data = 3;
 };
 
-message CategoryBraidRequest{
+message CategoryBrandRequest{
   int32 id = 1;
   int32 category_id = 2;
-  int32 braid_id = 3;
+  int32 brand_id = 3;
 };
