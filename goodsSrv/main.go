@@ -48,10 +48,10 @@ func main() {
 		//
 		proto.RegisterBrandServer(server, new(handler.BrandServer))
 		proto.RegisterBannerServer(server, new(handler.BannerServer))
+		proto.RegisterCategoryServer(server, new(handler.CategoryServer))
 		proto.RegisterCategoryBrandServer(server, new(proto.UnimplementedCategoryBrandServer))
-
 		proto.RegisterGoodsServer(server, new(proto.UnimplementedGoodsServer))
-		proto.RegisterCategoryServer(server, new(proto.UnimplementedCategoryServer))
+
 		//
 		lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *ip, *port))
 		if err != nil {
