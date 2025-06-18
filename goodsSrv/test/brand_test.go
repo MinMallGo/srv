@@ -3,7 +3,6 @@ package test
 import (
 	"context"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"log"
 	"srv/goodsSrv/proto/gen"
 	"testing"
@@ -12,22 +11,10 @@ import (
 var brand proto.BrandClient
 var c *grpc.ClientConn
 
-func conn() {
-	var err error
-	c, err = grpc.NewClient("127.0.0.1:54056", grpc.WithTransportCredentials(insecure.NewCredentials()))
-	if err != nil {
-		panic(err)
-	}
-	brand = proto.NewBrandClient(c)
-}
-
-func connClose() {
-	c.Close()
-}
-
 func TestBrandList(t *testing.T) {
-	conn()
-	defer connClose()
+	c = SrvInit()
+	defer SrvClose()
+	brand = proto.NewBrandClient(c)
 	// 测试查询用户列表。并且测试密码验证
 	list, err := brand.BrandList(context.Background(), &proto.BrandInfoRequest{
 		Page:     1,
@@ -45,8 +32,9 @@ func TestBrandList(t *testing.T) {
 }
 
 func TestBrandCreate(t *testing.T) {
-	conn()
-	defer connClose()
+	c = SrvInit()
+	defer SrvClose()
+	brand = proto.NewBrandClient(c)
 	res, err := brand.CreateBrand(context.Background(), &proto.CreateBrandInfo{
 		Name: "创建测试咯",
 		Logo: "xxx",

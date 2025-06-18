@@ -47,7 +47,7 @@ func main() {
 		server := grpc.NewServer()
 		//
 		proto.RegisterBrandServer(server, new(handler.BrandServer))
-		proto.RegisterBannerServer(server, new(proto.UnimplementedBannerServer))
+		proto.RegisterBannerServer(server, new(handler.BannerServer))
 		proto.RegisterCategoryBrandServer(server, new(proto.UnimplementedCategoryBrandServer))
 
 		proto.RegisterGoodsServer(server, new(proto.UnimplementedGoodsServer))

@@ -7,6 +7,7 @@ toolchain go1.23.10
 require (
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/consul/api v1.32.1
+	github.com/mbobakov/grpc-consul-resolver v1.5.3
 	github.com/nacos-group/nacos-sdk-go/v2 v2.3.2
 	github.com/spf13/viper v1.20.1
 	go.uber.org/zap v1.27.0
@@ -48,6 +49,7 @@ require (
 	github.com/deckarep/golang-set v1.7.1 // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
+	github.com/go-playground/form v3.1.4+incompatible // indirect
 	github.com/go-sql-driver/mysql v1.9.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/golang/mock v1.6.0 // indirect
@@ -63,6 +65,7 @@ require (
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/jmespath/go-jmespath v0.0.0-20180206201540-c2b33e8439af // indirect
+	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
