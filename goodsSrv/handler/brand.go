@@ -69,7 +69,7 @@ func (b BrandServer) UpdateBrand(ctx context.Context, info *proto.UpdateBrandInf
 
 	if res.RowsAffected == 0 {
 		zap.L().Error("[BrandServer].UpdateBrand 更新失败", zap.Error(res.Error), zap.String("name", info.Name), zap.String("logo", info.Logo))
-		return &emptypb.Empty{}, status.Error(codes.InvalidArgument, "<UNK>")
+		return &emptypb.Empty{}, status.Error(codes.InvalidArgument, "更新品牌失败")
 	}
 	return &emptypb.Empty{}, nil
 }

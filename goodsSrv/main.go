@@ -50,7 +50,7 @@ func main() {
 		proto.RegisterBannerServer(server, new(handler.BannerServer))
 		proto.RegisterCategoryServer(server, new(handler.CategoryServer))
 		proto.RegisterCategoryBrandServer(server, new(handler.CategoryBrandServer))
-		proto.RegisterGoodsServer(server, new(proto.UnimplementedGoodsServer))
+		proto.RegisterGoodsServer(server, new(handler.GoodsServer))
 
 		//
 		lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", *ip, *port))
