@@ -3,13 +3,17 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/status"
 	"net"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"srv/goodsSrv/global"
 	"srv/goodsSrv/handler"
 	"srv/goodsSrv/initialize"
@@ -44,8 +48,13 @@ func main() {
 	})
 
 	go func() {
-		server := grpc.NewServer()
-		//
+		server := grpc.NewServer(grpc.ChainUnaryInterceptor(
+			recovery.UnaryServerInterceptor(recovery.WithRecoveryHandler(func(p any) (err error) {
+				zap.L().Error("recovered from panic", zap.Any("panic", p), zap.Any("stack", string(debug.Stack())))
+				return status.Errorf(codes.Internal, "%s", p)
+			})),
+		))
+
 		proto.RegisterBrandServer(server, new(handler.BrandServer))
 		proto.RegisterBannerServer(server, new(handler.BannerServer))
 		proto.RegisterCategoryServer(server, new(handler.CategoryServer))
