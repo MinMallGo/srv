@@ -61,6 +61,15 @@ func (g GoodsServer) GoodsList(ctx context.Context, request *proto.GoodsFilterRe
 		return nil, status.Error(codes.InvalidArgument, "未查询到商品")
 	}
 
+	data := g.TidyGoods(goods)
+
+	resp.Total = int32(total)
+	resp.Data = data
+	return resp, nil
+}
+
+// TidyGoods 整理商品
+func (g GoodsServer) TidyGoods(goods []*GoodsModel2) []*proto.GoodsInfoResponse {
 	data := make([]*proto.GoodsInfoResponse, 0, len(goods))
 	for _, good := range goods {
 		data = append(data, &proto.GoodsInfoResponse{
@@ -96,34 +105,114 @@ func (g GoodsServer) GoodsList(ctx context.Context, request *proto.GoodsFilterRe
 		})
 	}
 
-	resp.Total = int32(total)
-	resp.Data = data
+	return data
+}
+
+func (g GoodsServer) BatchGetGoods(ctx context.Context, info *proto.BatchGoodsInfo) (*proto.GoodsListResponse, error) {
+	var resp = &proto.GoodsListResponse{}
+	var goods []*GoodsModel2
+	x := global.DB.Model(&model.Goods{}).Preload("Category").Preload("Brand").Where("id in ?", info.Id).Find(&goods)
+	if x.RowsAffected == 0 {
+		return nil, status.Error(codes.InvalidArgument, "未查询到商品")
+	}
+	resp.Total = int32(int64(len(goods)))
+	resp.Data = g.TidyGoods(goods)
 	return resp, nil
 }
 
-func (g GoodsServer) BatchGetGoods(ctx context.Context, info *proto.BatchGoodsInfo) (*proto.GoodsInfoResponse, error) {
-	//TODO implement me
-	panic("implement me")
+func (g GoodsServer) BrandExists(brandId int32) bool {
+	res := global.DB.Model(&model.Brand{}).Where("id = ?", brandId).First(&model.Brand{})
+	return res.RowsAffected > 0
+}
+
+func (g GoodsServer) CategoryExists(categoryId int32) bool {
+	res := global.DB.Model(&model.Category{}).Where("id = ?", categoryId).First(&model.Category{})
+	return res.RowsAffected > 0
 }
 
 func (g GoodsServer) CreateGods(ctx context.Context, info *proto.CreateGoodsInfo) (*proto.GoodsInfoResponse, error) {
-	//TODO implement me
-	panic("implement me")
-}
+	if !g.BrandExists(info.BrandId) {
+		return nil, status.Error(codes.InvalidArgument, "品牌不存在")
+	}
+	if !g.CategoryExists(info.CategoryId) {
+		return nil, status.Error(codes.InvalidArgument, "分类不存在")
+	}
 
-func (g GoodsServer) DeleteGoods(ctx context.Context, info *proto.DeleteGoodsInfo) (*emptypb.Empty, error) {
-	//TODO implement me
-	panic("implement me")
+	goods := &model.Goods{
+		CategoryID:      info.CategoryId,
+		BrandID:         info.BrandId,
+		OnSale:          info.OnSale,
+		ShipFree:        info.ShipFree,
+		IsNew:           info.IsNew,
+		Name:            info.Name,
+		GoodsSn:         info.GoodsSn,
+		ClickNum:        info.ClickNum,
+		SoldNum:         info.SoldNum,
+		FavNum:          info.FavNum,
+		MarketPrice:     info.MarketPrice,
+		ShopPrice:       info.ShopPrice,
+		GoodsBrief:      info.GoodsBrief,
+		ImageUrl:        info.ImageUrl,
+		Description:     info.Description,
+		GoodsFrontImage: info.GoodsFrontImage,
+	}
+
+	res := global.DB.Model(&model.Goods{}).Create(goods)
+	if res.RowsAffected == 0 {
+		return nil, status.Error(codes.InvalidArgument, "创建商品失败")
+	}
+	return &proto.GoodsInfoResponse{Id: int32(goods.ID)}, nil
 }
 
 func (g GoodsServer) UpdateGoods(ctx context.Context, info *proto.UpdateGoodsInfo) (*emptypb.Empty, error) {
-	//TODO implement me
-	panic("implement me")
+	if !g.BrandExists(info.BrandId) {
+		return nil, status.Error(codes.InvalidArgument, "品牌不存在")
+	}
+	if !g.CategoryExists(info.CategoryId) {
+		return nil, status.Error(codes.InvalidArgument, "分类不存在")
+	}
+
+	goods := &model.Goods{
+		CategoryID:      info.CategoryId,
+		BrandID:         info.BrandId,
+		OnSale:          info.OnSale,
+		ShipFree:        info.ShipFree,
+		IsNew:           info.IsNew,
+		Name:            info.Name,
+		GoodsSn:         info.GoodsSn,
+		ClickNum:        info.ClickNum,
+		SoldNum:         info.SoldNum,
+		FavNum:          info.FavNum,
+		MarketPrice:     info.MarketPrice,
+		ShopPrice:       info.ShopPrice,
+		GoodsBrief:      info.GoodsBrief,
+		ImageUrl:        info.ImageUrl,
+		Description:     info.Description,
+		GoodsFrontImage: info.GoodsFrontImage,
+	}
+	res := global.DB.Model(&model.Goods{}).Where("id = ?", info.Id).Updates(goods)
+	if res.RowsAffected == 0 {
+		return nil, status.Error(codes.InvalidArgument, "更新商品失败")
+	}
+	return &emptypb.Empty{}, nil
+}
+
+func (g GoodsServer) DeleteGoods(ctx context.Context, info *proto.DeleteGoodsInfo) (*emptypb.Empty, error) {
+	res := global.DB.Model(&model.Goods{}).Where("id = ?", info.Id).Delete(&model.Goods{})
+	if res.RowsAffected == 0 {
+		return nil, status.Error(codes.InvalidArgument, "删除商品失败")
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func (g GoodsServer) GetGoodsDetail(ctx context.Context, request *proto.GoodsInfoRequest) (*proto.GoodsInfoResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	var goods []*GoodsModel2
+	res := global.DB.Model(&model.Goods{}).Preload("Category").Preload("Brand").Where("id = ?", request.Id).Find(&goods)
+	if res.RowsAffected == 0 {
+		return nil, status.Error(codes.InvalidArgument, "未查询到商品")
+	}
+	data := g.TidyGoods(goods)
+	return data[0], nil
 }
 
 func (g GoodsServer) mustEmbedUnimplementedGoodsServer() {

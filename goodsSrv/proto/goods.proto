@@ -6,7 +6,7 @@ option go_package = ".;proto";
 service Goods {
   // 商品
   rpc GoodsList(GoodsFilterRequest) returns (GoodsListResponse);
-  rpc BatchGetGoods(BatchGoodsInfo) returns (GoodsInfoResponse);
+  rpc BatchGetGoods(BatchGoodsInfo) returns (GoodsListResponse);
   rpc CreateGods(CreateGoodsInfo) returns (GoodsInfoResponse);
   rpc DeleteGoods(DeleteGoodsInfo) returns(google.protobuf.Empty);
   rpc UpdateGoods(UpdateGoodsInfo) returns (google.protobuf.Empty);
@@ -81,11 +81,29 @@ message CreateGoodsInfo{
 message DeleteGoodsInfo{
   int32 id = 1;
 };
-message UpdateGoodsInfo{};
+message UpdateGoodsInfo{
+  int32 id = 1;
+  int32 categoryId = 2;
+  int32 brandId = 3;
+  bool onSale = 4;
+  bool shipFree = 5;
+  bool isNew = 6;
+  int32 stock = 7;
+  string name = 8;
+  string goodsSn = 9;
+  int32 clickNum = 10;
+  int32 soldNum = 11;
+  int32 favNum = 12;
+  float marketPrice = 13;
+  float shopPrice = 14;
+  string goodsBrief = 15;
+  repeated string imageUrl = 16;
+  repeated string description = 17;
+  string goodsFrontImage = 18;
+};
 message GoodsInfoRequest{
   int32 id = 1;
 };
-
 
 message CategoryBriefInfoResponse{
   int32 id = 1;
