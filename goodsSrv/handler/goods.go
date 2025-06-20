@@ -120,7 +120,7 @@ func (g GoodsServer) BatchGetGoods(ctx context.Context, info *proto.BatchGoodsIn
 	return resp, nil
 }
 
-func (g GoodsServer) CreateGods(ctx context.Context, info *proto.CreateGoodsInfo) (*proto.GoodsInfoResponse, error) {
+func (g GoodsServer) CreateGoods(ctx context.Context, info *proto.CreateGoodsInfo) (*proto.GoodsInfoResponse, error) {
 	if !BrandExists(info.BrandId) {
 		return nil, status.Error(codes.InvalidArgument, "品牌不存在")
 	}
