@@ -76,10 +76,10 @@ func (g GoodsServer) TidyGoods(goods []*GoodsModel2) []*proto.GoodsInfoResponse 
 			Id:          int32(good.ID),
 			CategoryId:  good.CategoryID,
 			BrandId:     good.BrandID,
-			OnSale:      good.OnSale,
+			OnSale:      *good.OnSale,
+			IsNew:       *good.IsNew,
+			IsHot:       *good.IsHot,
 			ShipFree:    good.ShipFree,
-			IsNew:       good.IsNew,
-			IsHot:       good.IsHot,
 			Name:        good.Name,
 			GoodsSn:     good.GoodsSn,
 			ClickNum:    good.ClickNum,
@@ -120,30 +120,20 @@ func (g GoodsServer) BatchGetGoods(ctx context.Context, info *proto.BatchGoodsIn
 	return resp, nil
 }
 
-func (g GoodsServer) BrandExists(brandId int32) bool {
-	res := global.DB.Model(&model.Brand{}).Where("id = ?", brandId).First(&model.Brand{})
-	return res.RowsAffected > 0
-}
-
-func (g GoodsServer) CategoryExists(categoryId int32) bool {
-	res := global.DB.Model(&model.Category{}).Where("id = ?", categoryId).First(&model.Category{})
-	return res.RowsAffected > 0
-}
-
 func (g GoodsServer) CreateGods(ctx context.Context, info *proto.CreateGoodsInfo) (*proto.GoodsInfoResponse, error) {
-	if !g.BrandExists(info.BrandId) {
+	if !BrandExists(info.BrandId) {
 		return nil, status.Error(codes.InvalidArgument, "品牌不存在")
 	}
-	if !g.CategoryExists(info.CategoryId) {
+	if !CategoryExists(info.CategoryId) {
 		return nil, status.Error(codes.InvalidArgument, "分类不存在")
 	}
 
 	goods := &model.Goods{
 		CategoryID:      info.CategoryId,
 		BrandID:         info.BrandId,
-		OnSale:          info.OnSale,
+		OnSale:          &info.OnSale,
+		IsNew:           &info.IsNew,
 		ShipFree:        info.ShipFree,
-		IsNew:           info.IsNew,
 		Name:            info.Name,
 		GoodsSn:         info.GoodsSn,
 		ClickNum:        info.ClickNum,
@@ -165,19 +155,20 @@ func (g GoodsServer) CreateGods(ctx context.Context, info *proto.CreateGoodsInfo
 }
 
 func (g GoodsServer) UpdateGoods(ctx context.Context, info *proto.UpdateGoodsInfo) (*emptypb.Empty, error) {
-	if !g.BrandExists(info.BrandId) {
+	if info.BrandId != 0 && !BrandExists(info.BrandId) {
 		return nil, status.Error(codes.InvalidArgument, "品牌不存在")
 	}
-	if !g.CategoryExists(info.CategoryId) {
+	if info.CategoryId != 0 && !CategoryExists(info.CategoryId) {
 		return nil, status.Error(codes.InvalidArgument, "分类不存在")
 	}
 
 	goods := &model.Goods{
 		CategoryID:      info.CategoryId,
 		BrandID:         info.BrandId,
-		OnSale:          info.OnSale,
+		OnSale:          &info.OnSale,
+		IsNew:           &info.IsNew,
+		IsHot:           &info.IsHot,
 		ShipFree:        info.ShipFree,
-		IsNew:           info.IsNew,
 		Name:            info.Name,
 		GoodsSn:         info.GoodsSn,
 		ClickNum:        info.ClickNum,

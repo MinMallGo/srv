@@ -23,22 +23,12 @@ type CategoryBrandModel struct {
 // 检查category_id 是否存在
 // 检查 brand_id 是否存在
 
-func (c CategoryBrandServer) CategoryExists(categoryId int32) bool {
-	res := global.DB.Model(&model.Category{}).Where("id = ?", categoryId).First(&model.Category{})
-	return res.RowsAffected > 0
-}
-
-func (c CategoryBrandServer) BrandExists(categoryId int32) bool {
-	global.DB.Model(&model.Brand{}).Where("id = ?", categoryId).First(&model.Brand{})
-	return true
-}
-
 func (c CategoryBrandServer) CreateCategoryBrand(ctx context.Context, info *proto.CreateCategoryBrandInfo) (*proto.CategoryBrandResponse, error) {
-	if !c.CategoryExists(info.CategoryId) {
+	if !CategoryExists(info.CategoryId) {
 		return nil, status.Error(codes.InvalidArgument, "分类不存在")
 	}
 
-	if !c.BrandExists(info.BrandId) {
+	if !BrandExists(info.BrandId) {
 		return nil, status.Error(codes.InvalidArgument, "品牌不存在")
 	}
 
@@ -66,11 +56,11 @@ func (c CategoryBrandServer) DeleteCategoryBrand(ctx context.Context, info *prot
 }
 
 func (c CategoryBrandServer) UpdateCategoryBrand(ctx context.Context, info *proto.UpdateCategoryBrandInfo) (*emptypb.Empty, error) {
-	if !c.CategoryExists(info.CategoryId) {
+	if info.CategoryId != 0 && !CategoryExists(info.CategoryId) {
 		return nil, status.Error(codes.InvalidArgument, "分类不存在")
 	}
 
-	if !c.BrandExists(info.BrandId) {
+	if info.BrandId != 0 && !BrandExists(info.BrandId) {
 		return nil, status.Error(codes.InvalidArgument, "品牌不存在")
 	}
 	data := &model.CategoryBrand{

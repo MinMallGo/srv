@@ -7,7 +7,7 @@ service Goods {
   // 商品
   rpc GoodsList(GoodsFilterRequest) returns (GoodsListResponse);
   rpc BatchGetGoods(BatchGoodsInfo) returns (GoodsListResponse);
-  rpc CreateGods(CreateGoodsInfo) returns (GoodsInfoResponse);
+  rpc CreateGoods(CreateGoodsInfo) returns (GoodsInfoResponse);
   rpc DeleteGoods(DeleteGoodsInfo) returns(google.protobuf.Empty);
   rpc UpdateGoods(UpdateGoodsInfo) returns (google.protobuf.Empty);
   rpc GetGoodsDetail(GoodsInfoRequest) returns (GoodsInfoResponse);
@@ -100,6 +100,7 @@ message UpdateGoodsInfo{
   repeated string imageUrl = 16;
   repeated string description = 17;
   string goodsFrontImage = 18;
+  bool isHot = 19;
 };
 message GoodsInfoRequest{
   int32 id = 1;
