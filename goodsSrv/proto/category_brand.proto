@@ -45,6 +45,4 @@ message CategoryBrandListResponse{
 
 message CategoryBrandRequest{
   int32 id = 1;
-  int32 category_id = 2;
-  int32 brand_id = 3;
 };
