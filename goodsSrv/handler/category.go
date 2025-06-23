@@ -75,7 +75,11 @@ func (c CategoryServer) GetSubCategory(ctx context.Context, request *proto.Categ
 	var resp = &proto.SubCategoryListResponse{}
 	var categories []*model.Category
 	// 查询当前level和他下面的所有
-	res := global.DB.Model(&model.Category{}).Where("level >= ?", request.Level).Find(&categories)
+	g := global.DB.Model(&model.Category{}).Where("level >= ?", request.Level)
+	if request.ParentCategoryID > 0 {
+		g = g.Where("parent_category_id = ? OR id = ?", request.ParentCategoryID, request.ParentCategoryID)
+	}
+	res := g.Find(&categories)
 	if res.Error != nil || res.RowsAffected == 0 {
 		return resp, status.Error(codes.NotFound, "Category Not Found")
 	}
