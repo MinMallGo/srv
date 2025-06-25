@@ -33,6 +33,7 @@ func main() {
 	initialize.InitZap()
 	initialize.InitConfig()
 	initialize.InitDB()
+	initialize.InitRedLock() // 初始化分布式锁
 	flag.Parse()
 	if *port == 0 {
 		*port = global.GetPort()

@@ -16,10 +16,88 @@ type Stock struct {
 	Stocks  int32
 }
 
+// OptimismStock 乐观更新
+type OptimismStock struct {
+	GoodsId int32
+	Stocks  int32
+	Version int32
+}
+
 func NewInventoryDao(db *gorm.DB) *InventoryDao {
 	return &InventoryDao{
 		db: db,
 	}
+}
+
+func (d *InventoryDao) OptimismDecr(decr *[]OptimismStock) error {
+	if len(*decr) == 0 {
+		return errors.New("商品库存扣减失败")
+	}
+	// set stock需要更新的sql
+	stockCase := " WHEN goods_id = %d THEN stocks - %d "
+	stockStr := ""
+	// set version需要更新的sql
+	versionCase := " WHEN goods_id = %d THEN version + %d "
+	versionStr := ""
+	// where条件
+	orStr := " (goods_id = %d AND stocks >= %d AND version = %d) "
+	where := ""
+	// 遍历和组装set更新条件
+	// 以及where的条件
+	for index, item := range *decr {
+		stockStr += fmt.Sprintf(stockCase, item.GoodsId, item.Stocks)
+		versionStr += fmt.Sprintf(versionCase, item.GoodsId, 1)
+		where += fmt.Sprintf(orStr, item.GoodsId, item.Stocks, item.Version)
+		if index < len(*decr)-1 {
+			where += " OR "
+		}
+	}
+
+	sql := `UPDATE inventory SET stocks = CASE %s END, version = CASE %s END WHERE %s`
+	sql = fmt.Sprintf(sql, stockStr, versionStr, where)
+
+	//res := &model.MmSku{}
+	res := d.db.Model(&model.Inventory{}).Exec(sql)
+
+	if res.RowsAffected != int64(len(*decr)) {
+		return errors.New("库存不足")
+	}
+
+	return nil
+}
+
+// LockDecr 适用于select... for update和redlock 的库存扣减
+func (d *InventoryDao) LockDecr(decr *[]OptimismStock) error {
+	if len(*decr) == 0 {
+		return errors.New("商品库存扣减失败")
+	}
+	// set stock需要更新的sql
+	stockCase := " WHEN goods_id = %d THEN stocks - %d "
+	stockStr := ""
+	// where条件
+	orStr := " (goods_id = %d AND stocks >= %d ) "
+	where := ""
+	// 遍历和组装set更新条件
+	// 以及where的条件
+	for index, item := range *decr {
+		stockStr += fmt.Sprintf(stockCase, item.GoodsId, item.Stocks)
+		where += fmt.Sprintf(orStr, item.GoodsId, item.Stocks)
+		if index < len(*decr)-1 {
+			where += " OR "
+		}
+	}
+
+	sql := `UPDATE inventory SET stocks = CASE %s END WHERE %s`
+	sql = fmt.Sprintf(sql, stockStr, where)
+
+	//res := &model.MmSku{}
+	res := d.db.Model(&model.Inventory{}).Exec(sql)
+
+	if res.RowsAffected != int64(len(*decr)) {
+		return errors.New("库存不足")
+	}
+
+	return nil
 }
 
 func (d *InventoryDao) StockDecrease(decr *[]Stock) error {

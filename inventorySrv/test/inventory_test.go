@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	proto "srv/inventorySrv/proto/gen"
+	"sync"
 	"testing"
 )
 
@@ -28,16 +29,28 @@ func TestGet(t *testing.T) {
 }
 
 func TestSellStock(t *testing.T) {
-	e, err := proto.NewInventoryClient(SrvInit()).SellStock(context.Background(), &proto.MultipleInfo{
-		Sell: []*proto.SetInfo{
-			{GoodsId: 1, Stock: 1},
-			{GoodsId: 2, Stock: 1},
-		},
-	})
-	if err != nil {
-		t.Error(err)
+	fn := func() {
+		_, err := proto.NewInventoryClient(SrvInit()).SellStock(context.Background(), &proto.MultipleInfo{
+			Sell: []*proto.SetInfo{
+				{GoodsId: 1, Stock: 1},
+				{GoodsId: 2, Stock: 1},
+			},
+		})
+		if err != nil {
+			t.Error(err)
+		}
 	}
-	fmt.Println(e)
+
+	var wg sync.WaitGroup
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fn()
+		}()
+	}
+	wg.Wait()
+
 }
 
 func TestReturnStock(t *testing.T) {

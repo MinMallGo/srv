@@ -4,6 +4,7 @@ type ServerConfig struct {
 	MySQL  MySQLConfig  `mapstructure:"mysql"`
 	Consul ConsulConfig `mapstructure:"consul"`
 	Name   string       `mapstructure:"name"`
+	Redis  RedisCnf     `mapstructure:"redis"`
 }
 
 type MySQLConfig struct {
@@ -28,4 +29,10 @@ type NacosCnf struct {
 	Namespace string `json:"namespace"`
 	DataID    string `json:"data_id"`
 	Group     string `json:"group"`
+}
+
+type RedisCnf struct {
+	Host     string `mapstructure:"host" json:"host"`
+	Port     int    `mapstructure:"port" json:"port"`
+	Password string `mapstructure:"password" json:"password"`
 }
