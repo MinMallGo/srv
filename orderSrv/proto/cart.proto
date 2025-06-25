@@ -1,0 +1,60 @@
+syntax = "proto3";
+option go_package = ".;proto";
+import "google/protobuf/empty.proto";
+
+
+/**
+    1. 获取用户购物车详细
+    2. 添加商品到购物车
+    3. 移除商品
+    4. 选中商品
+    5. 更新商品数量
+ */
+
+service Cart {
+  rpc AddGoods(AddGoodsReq) returns (google.protobuf.Empty);
+  rpc RemoveGoods(RemoveGoodsReq) returns (google.protobuf.Empty);
+  rpc SelectGoods(SelectGoodsReq) returns(google.protobuf.Empty);
+  rpc GetCartList(GetCartListReq) returns (CartListResp);
+  rpc UpdateGoodsNum(UpdateNumReq) returns(google.protobuf.Empty);
+}
+// 添加就只能一个一个添加了
+message AddGoodsReq {
+  int32 goods_id = 1;
+  int32 goods_num = 2;
+  string goods_img = 3;
+  int32 user_id = 4;
+}
+// 可以移除多个商品
+message RemoveGoodsReq{
+  repeated int32 goods_id = 1;
+  int32 user_id = 2;
+}
+// 可以选中多个商品
+message SelectGoodsReq{
+  repeated int32 goods_id = 1;
+  int32 user_id = 2;
+}
+message UpdateNumReq {
+  int32 goods_id = 1;
+  int32 goods_num = 2;
+  int32 user_id = 3;
+}
+
+message GetCartListReq {
+  int32 user_id = 1;
+  int32 is_checked = 2;
+}
+
+message CartDetail{
+  int32 UserID = 1;
+  int32 GoodsID = 2;
+  string GoodsImg = 3;
+  int32 Nums = 4;
+  bool Checked = 5;
+}
+
+message CartListResp {
+  int32 total = 1;
+  repeated CartDetail data = 2;
+}

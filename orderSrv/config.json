@@ -1,0 +1,9 @@
+{
+  "host": "192.168.3.5",
+  "port": 8848,
+  "username": "nacos",
+  "password": "nacos",
+  "namespace": "4aa98271-b484-45b7-8815-f2ffaa0b02d8",
+  "data_id": "order-srv",
+  "group": "pro"
+}
