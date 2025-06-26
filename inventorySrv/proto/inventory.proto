@@ -4,9 +4,9 @@ import "google/protobuf/empty.proto";
 
 service Inventory {
   rpc SetStock(SetInfo) returns(google.protobuf.Empty); // 设置库存 | 更新库存
-  rpc SellStock (MultipleInfo) returns(google.protobuf.Empty);
-  rpc GetStock (GetInfo) returns (StockResp);
-  rpc ReturnStock (MultipleInfo) returns(google.protobuf.Empty);
+  rpc SellStock (MultipleInfo) returns(google.protobuf.Empty); // 销售
+  rpc GetStock (GetInfo) returns (StockResp); // 获取库存
+  rpc ReturnStock (MultipleInfo) returns(google.protobuf.Empty); // 归还库存
 }
 
 message SetInfo {

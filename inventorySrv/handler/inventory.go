@@ -45,7 +45,7 @@ func (i InventoryServer) SetStock(ctx context.Context, info *proto.SetInfo) (*em
 		// 修改
 		res = tx.Model(&model.Inventory{}).Where("goods_id = ?", info.GoodsId).Update("stocks", info.Stock)
 		if res.Error != nil {
-			zap.L().Info(`<SetStock>.Update("stocks", info.Stock)`, zap.Error(res.Error))
+			zap.L().Info(`<SetStock>.Update("stocks", info.Inventory)`, zap.Error(res.Error))
 			return status.Error(codes.Internal, res.Error.Error())
 		}
 		return nil
