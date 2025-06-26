@@ -271,7 +271,7 @@ func (o *RedLock) Decr(info ...Stocks) error {
 		return nil
 	})
 
-	if err == nil {
+	if err != nil {
 		return err
 	}
 
