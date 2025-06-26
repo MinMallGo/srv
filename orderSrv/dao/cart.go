@@ -83,7 +83,7 @@ func (c CartDao) Update(ctx context.Context, req CartUpdate) error {
 		GoodsImg: req.GoodsImg,
 		Nums:     req.GoodsNum,
 	}
-	res := c.db.Model(&model.Cart{}).Where("id = ?", req.ID).Updates(update)
+	res := c.db.Model(&model.Cart{}).Where("id = ? AND user_id = ? AND goods_id IN ?", req.ID, req.UserId, req.GoodsId).Updates(update)
 	return HandleError(res, 1)
 }
 
