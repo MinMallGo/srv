@@ -5,6 +5,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
+	"log"
 	dao2 "srv/orderSrv/dao"
 	"srv/orderSrv/global"
 	"srv/orderSrv/model"
@@ -52,7 +53,7 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 	if len(batchGoods.Data) == 0 || len(batchGoods.Data) != len(goodsMap) {
 		return nil, status.Error(codes.NotFound, "请选择正确的商品")
 	}
-	
+
 	// 库存扣减
 	_, err = global.CrossSrv.Inventory.SellStock(context.Background(), &proto.MultipleInfo{Sell: sell})
 	if err != nil {
@@ -99,12 +100,13 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 
 	var orderId int
 	err = global.DB.Transaction(func(tx *gorm.DB) error {
-		orderId, err = dao2.NewOrderDao(tx).Create(*order)
+		orderId, err = dao2.NewOrderDao(tx).Create(order)
+		log.Println("Create order ID is :", orderId)
 		if err != nil {
 			return err
 		}
-		for _, goods := range orderGoods {
-			goods.OrderId = int32(orderId)
+		for i := range orderGoods {
+			orderGoods[i].OrderId = int32(orderId)
 		}
 
 		err = dao2.NewOrderGoodsDao(tx).BatchCreate(orderGoods)
@@ -134,7 +136,7 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 }
 
 func (o OrderService) GetList(ctx context.Context, req *proto.OrderListReq) (*proto.OrderListResp, error) {
-	res, err := dao2.NewOrderDao(global.DB).GetList(ctx, dao2.OrderListResp{Page: req.Page, Size: req.PageSize})
+	res, err := dao2.NewOrderDao(global.DB).GetList(ctx, dao2.OrderListReq{Page: req.Page, Size: req.PageSize, UserID: req.UserId})
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +149,7 @@ func (o OrderService) GetListDetail(ctx context.Context, req *proto.OrderDetailR
 		return nil, status.Error(codes.InvalidArgument, "参数异常")
 	}
 
-	res, err := dao2.NewOrderDao(global.DB).GetDetail(ctx, dao2.OrderDetailResp{OrderId: req.OrderId, OrderSN: req.OrderSn})
+	res, err := dao2.NewOrderDao(global.DB).GetDetail(ctx, dao2.OrderDetailReq{OrderId: req.OrderId, OrderSN: req.OrderSn})
 	if err != nil {
 		return nil, err
 	}

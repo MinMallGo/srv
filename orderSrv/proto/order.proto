@@ -15,13 +15,10 @@ service Order {
 
 message CreateOrderReq {
   int32  UserID = 1;
-  string SubjectTitle = 2;
-  double OrderPrice = 3;
-  double FinalPrice = 4;
-  string Address = 5;
-  string RecipientName = 6;
-  string RecipientMobile = 7;
-  string Message = 8;
+  string Address = 2;
+  string RecipientName = 3;
+  string RecipientMobile = 4;
+  string Message = 5;
 }
 
 message CreateResp {
@@ -30,8 +27,9 @@ message CreateResp {
 }
 
 message OrderListReq {
-  int32 page = 3;
-  int32 pageSize = 4;
+  int32 user_id = 1; // 要user_id是为了方便区分是管理员全部查询还是普通用户就只查询自己的
+  int32 page = 2;
+  int32 pageSize = 3;
 }
 
 message OrderListResp {
@@ -42,6 +40,7 @@ message OrderListResp {
 message OrderDetailReq{
   int32 order_id = 1;
   string order_sn = 2;
+  int32 user_id = 3;
 }
 
 message OrderDetailResp{
@@ -58,7 +57,8 @@ message OrderDetailResp{
   string RecipientMobile = 11;
   string Message = 12;
   string Snapshot = 13;
-  repeated GoodsInfo goods = 14;
+  string Create_at = 14;
+  repeated GoodsInfo goods = 15;
 }
 
 message GoodsInfo {

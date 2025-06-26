@@ -15,12 +15,14 @@ func NewOrderDao(db *gorm.DB) *OrderDao {
 	return &OrderDao{db: db}
 }
 
-type OrderListResp struct {
-	Page int32
-	Size int32
+type OrderListReq struct {
+	UserID int32
+	Page   int32
+	Size   int32
 }
 
-type OrderDetailResp struct {
+type OrderDetailReq struct {
+	UserID  int32
 	OrderId int32
 	OrderSN string
 }
@@ -30,29 +32,48 @@ type Order struct {
 	Goods []*model.OrderGoods `gorm:"foreignkey:OrderId;references:ID"`
 }
 
-func (r *OrderDao) Create(param model.Order) (int, error) {
+func (r *OrderDao) Create(param *model.Order) (int, error) {
 	res := r.db.Model(&model.Order{}).Create(&param)
 	return int(param.ID), HandleError(res, 1)
 }
 
-func (r *OrderDao) GetList(ctx context.Context, req OrderListResp) (*proto.OrderListResp, error) {
-	list := []model.Order{}
+func (r *OrderDao) GetList(ctx context.Context, req OrderListReq) (*proto.OrderListResp, error) {
+	list := []Order{}
 	var count int64
-
-	res := r.db.Model(&model.Order{}).Count(&count)
+	res := r.db.Model(&model.Order{})
+	if req.UserID != 0 {
+		res = res.Where("user_id = ?", req.UserID)
+	}
+	res = res.Count(&count)
 	err := HandleError(res, 0)
 	if err != nil {
 		return nil, err
 	}
 
-	res = r.db.Model(&model.Order{}).Scopes(Paginate(int(req.Page), int(req.Size))).Find(&list)
-	err = HandleError(res, 0)
+	x := r.db.Model(&model.Order{}).Preload("Goods").Scopes(Paginate(int(req.Page), int(req.Size)))
+	if req.UserID != 0 {
+		x = x.Where("user_id = ?", req.UserID)
+	}
+	x = x.Find(&list)
+	err = HandleError(x, 0)
 	if err != nil {
 		return nil, err
 	}
 
 	data := make([]*proto.OrderDetailResp, 0, len(list))
 	for _, order := range list {
+		goods := make([]*proto.GoodsInfo, 0, len(order.Goods))
+		for _, good := range order.Goods {
+			goods = append(goods, &proto.GoodsInfo{
+				OrderID:    good.OrderId,
+				OrderSN:    good.OrderSN,
+				GoodsID:    good.GoodsId,
+				GoodsPrice: good.GoodsPrice,
+				PayPrice:   good.PayPrice,
+				GoodsName:  good.GoodsName,
+				Num:        good.Nums,
+			})
+		}
 		data = append(data, &proto.OrderDetailResp{
 			UserID:          order.UserID,
 			OrderSN:         order.OrderSN,
@@ -67,6 +88,8 @@ func (r *OrderDao) GetList(ctx context.Context, req OrderListResp) (*proto.Order
 			RecipientMobile: order.RecipientMobile,
 			Message:         order.Message,
 			Snapshot:        order.Snapshot,
+			CreateAt:        order.CreatedAt.Format("2006-01-02 15:04:05"),
+			Goods:           goods,
 		})
 	}
 
@@ -76,7 +99,7 @@ func (r *OrderDao) GetList(ctx context.Context, req OrderListResp) (*proto.Order
 	}, nil
 }
 
-func (r *OrderDao) GetDetail(ctx context.Context, req OrderDetailResp) (*Order, error) {
+func (r *OrderDao) GetDetail(ctx context.Context, req OrderDetailReq) (*Order, error) {
 	order := &Order{}
 	query := r.db.Model(&model.Order{}).Preload("Goods")
 	if req.OrderId > 0 {
@@ -85,6 +108,10 @@ func (r *OrderDao) GetDetail(ctx context.Context, req OrderDetailResp) (*Order, 
 
 	if len(req.OrderSN) > 0 {
 		query = query.Where("order_sn = ?", req.OrderSN)
+	}
+
+	if req.UserID > 0 {
+		query = query.Where("user_id = ?", req.UserID)
 	}
 
 	res := query.Find(order)

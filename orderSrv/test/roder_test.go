@@ -42,7 +42,7 @@ func TestOrderDetail(t *testing.T) {
 	c := proto.NewOrderClient(SrvInit())
 	defer SrvConn.Close()
 	list, err := c.GetListDetail(context.Background(), &proto.OrderDetailReq{
-		OrderId: 1,
+		OrderId: 3,
 		OrderSn: "",
 	})
 	if err != nil {
