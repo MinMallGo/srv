@@ -1,7 +1,7 @@
 package dao
 
 import (
-	"fmt"
+	"errors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -27,24 +27,35 @@ func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 	}
 }
 
-// HandleError handle住错误并记录错误，然后判断影响的条数和实际受影响的条数是否一致
-func HandleError(res *gorm.DB, affect int) error {
-	if res.Error != nil {
-		// 通过反射获取是哪个方法调用的。
-		funcName := "unknown"
-		if pc, _, _, ok := runtime.Caller(1); ok {
-			if fun := runtime.FuncForPC(pc); fun != nil {
-				funcName = fun.Name()
-			}
-		}
-
-		zap.L().Error(fmt.Sprintf("%s:error :", funcName), zap.Error(res.Error))
-		return status.Error(codes.Internal, "内部错误")
+// HandleError 检查 DB 操作错误及影响行数是否符合预期。
+// affect == 0 表示忽略行数检查。
+func HandleError(res *gorm.DB, expectAffect int) error {
+	if res.Error != nil && !errors.Is(res.Error, gorm.ErrRecordNotFound) {
+		zap.L().Error("gorm error",
+			zap.String("caller", callerFunc(2)), // skip=2 是更常见的调用层级
+			zap.Error(res.Error),
+		)
+		return status.Error(codes.Internal, "数据库错误")
 	}
 
-	// 如果为0，说明不需要检查这里，比如什么获取列表之类的操作
-	if affect != 0 && res.RowsAffected != int64(affect) {
-		return status.Error(codes.Internal, "数据库操作失败失败")
+	if expectAffect > 0 && res.RowsAffected != int64(expectAffect) {
+		zap.L().Warn("affected rows mismatch",
+			zap.String("caller", callerFunc(2)),
+			zap.Int("expected", expectAffect),
+			zap.Int64("actual", res.RowsAffected),
+		)
+		return status.Error(codes.Internal, "操作失败")
 	}
+
 	return nil
+}
+
+// callerFunc 获取调用者函数名（skip=0 当前函数，1 调用者...）
+func callerFunc(skip int) string {
+	if pc, _, _, ok := runtime.Caller(skip); ok {
+		if f := runtime.FuncForPC(pc); f != nil {
+			return f.Name()
+		}
+	}
+	return "unknown"
 }

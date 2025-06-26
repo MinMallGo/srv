@@ -1,9 +1,12 @@
 package global
 
 import (
+	"fmt"
 	"github.com/google/uuid"
 	"go.uber.org/zap"
+	"math/rand"
 	"net"
+	"time"
 )
 
 // GetPort 获取能用的随机端口
@@ -25,4 +28,11 @@ func GetPort() int {
 
 func UUID() string {
 	return uuid.New().String()
+}
+
+func OrderSN(userId int) string {
+	now := time.Now()
+	randx := rand.New(rand.NewSource(now.UnixNano())).Intn(90) + 10
+
+	return fmt.Sprintf("%s%d%d%d", now.Format("20060102150405"), now.UnixNano(), userId, randx)
 }

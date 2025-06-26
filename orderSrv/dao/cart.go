@@ -3,6 +3,7 @@ package dao
 import (
 	"context"
 	"gorm.io/gorm"
+	"log"
 	"srv/orderSrv/model"
 )
 
@@ -50,8 +51,9 @@ func (c CartDao) Exists(ctx context.Context, req CartBase) bool {
 }
 
 func (c CartDao) MultiExists(ctx context.Context, req CartMultiGoods) bool {
-	resp := &model.Cart{}
-	res := c.db.Model(&model.Cart{}).Where("user_id = ? AND goods_id = ?", req.UserId, req.GoodsId).First(&resp)
+	resp := &[]model.Cart{}
+	res := c.db.Model(&model.Cart{}).Where("user_id = ? AND goods_id IN ?", req.UserId, req.GoodsId).Find(&resp)
+	log.Println(len(req.GoodsId), res.RowsAffected)
 	err := HandleError(res, len(req.GoodsId))
 	return err == nil
 }
@@ -59,7 +61,7 @@ func (c CartDao) MultiExists(ctx context.Context, req CartMultiGoods) bool {
 func (c CartDao) Get(ctx context.Context, req CartBase) (*model.Cart, error) {
 	resp := &model.Cart{}
 	res := c.db.Model(&model.Cart{}).Where("user_id = ? AND goods_id = ?", req.UserId, req.GoodsId).First(&resp)
-	return resp, HandleError(res, 1)
+	return resp, HandleError(res, 0)
 }
 
 func (c CartDao) Create(ctx context.Context, req CartCreate) error {
@@ -87,7 +89,7 @@ func (c CartDao) Update(ctx context.Context, req CartUpdate) error {
 
 func (c CartDao) Delete(ctx context.Context, req CartMultiGoods) error {
 	res := c.db.Model(&model.Cart{}).Where("user_id = ? AND goods_id IN ?", req.UserId, req.GoodsId).Delete(&model.Cart{})
-	return HandleError(res, 1)
+	return HandleError(res, len(req.GoodsId))
 }
 
 // SelectGoods 勾选商品

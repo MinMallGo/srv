@@ -10,6 +10,7 @@ import (
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/status"
+	"log"
 	"net"
 	"os"
 	"os/signal"
@@ -32,8 +33,13 @@ func main() {
 	*/
 	initialize.InitZap()
 	initialize.InitConfig()
+	log.Printf("%#v\n", global.SrvConfig)
 	initialize.InitDB()
 	initialize.InitRedLock() // 初始化分布式锁
+
+	log.Printf("%#v\n", global.SrvConfig)
+	initialize.InitCrossSrv() // 初始化跨服务调用的连接
+
 	flag.Parse()
 	if *port == 0 {
 		*port = global.GetPort()

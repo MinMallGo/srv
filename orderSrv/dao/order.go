@@ -20,6 +20,21 @@ type OrderListResp struct {
 	Size int32
 }
 
+type OrderDetailResp struct {
+	OrderId int32
+	OrderSN string
+}
+
+type Order struct {
+	model.Order
+	Goods []*model.OrderGoods `gorm:"foreignkey:OrderId;references:ID"`
+}
+
+func (r *OrderDao) Create(param model.Order) (int, error) {
+	res := r.db.Model(&model.Order{}).Create(&param)
+	return int(param.ID), HandleError(res, 1)
+}
+
 func (r *OrderDao) GetList(ctx context.Context, req OrderListResp) (*proto.OrderListResp, error) {
 	list := []model.Order{}
 	var count int64
@@ -45,8 +60,8 @@ func (r *OrderDao) GetList(ctx context.Context, req OrderListResp) (*proto.Order
 			Status:          order.Status,
 			TradeNo:         order.TradeNo,
 			SubjectTitle:    order.SubjectTitle,
-			OrderPrice:      float64(order.OrderPrice),
-			FinalPrice:      float64(order.FinalPrice),
+			OrderPrice:      order.OrderPrice,
+			FinalPrice:      order.FinalPrice,
 			Address:         order.Address,
 			RecipientName:   order.RecipientName,
 			RecipientMobile: order.RecipientMobile,
@@ -59,4 +74,20 @@ func (r *OrderDao) GetList(ctx context.Context, req OrderListResp) (*proto.Order
 		Total: int32(count),
 		Data:  data,
 	}, nil
+}
+
+func (r *OrderDao) GetDetail(ctx context.Context, req OrderDetailResp) (*Order, error) {
+	order := &Order{}
+	query := r.db.Model(&model.Order{}).Preload("Goods")
+	if req.OrderId > 0 {
+		query = query.Where("id = ?", req.OrderId)
+	}
+
+	if len(req.OrderSN) > 0 {
+		query = query.Where("order_sn = ?", req.OrderSN)
+	}
+
+	res := query.Find(order)
+	err := HandleError(res, 1)
+	return order, err
 }

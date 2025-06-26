@@ -2,7 +2,6 @@ package initialize
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
@@ -46,7 +45,6 @@ func InitConfig() {
 	}
 
 	// 读取nacos的配置文件之后，打印以下看看
-	fmt.Printf("nacos配置文件：%#v\n", nacos)
 
 	// 连接nacos获取配置
 	cnf, err := getConfig()
@@ -58,7 +56,6 @@ func InitConfig() {
 	if err != nil {
 		zap.L().Fatal("[InitConfig].[json.Unmarshal] with error:", zap.Error(err))
 	}
-	zap.L().Info("[InitConfig] <UNK>", zap.Any("cnf", cnf))
 }
 
 func getConfig() (string, error) {

@@ -1,0 +1,29 @@
+syntax="proto3";
+option go_package=".;proto";
+import "google/protobuf/empty.proto";
+
+service Inventory {
+  rpc SetStock(SetInfo) returns(google.protobuf.Empty); // 设置库存 | 更新库存
+  rpc SellStock (MultipleInfo) returns(google.protobuf.Empty);
+  rpc GetStock (GetInfo) returns (StockResp);
+  rpc ReturnStock (MultipleInfo) returns(google.protobuf.Empty);
+}
+
+message SetInfo {
+  int32 goods_id = 1;
+  int32 stock = 2;
+}
+
+message GetInfo {
+  int32 goods_id = 1;
+  int32 stock = 2;
+}
+
+message MultipleInfo {
+  repeated SetInfo sell = 1;
+}
+
+message StockResp {
+  int32 goods_id = 1;
+  int32 stock = 2;
+}

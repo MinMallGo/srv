@@ -89,8 +89,21 @@ func (c CartService) GetCartList(ctx context.Context, req *proto.GetCartListReq)
 }
 
 func (c CartService) UpdateGoodsNum(ctx context.Context, req *proto.UpdateNumReq) (*emptypb.Empty, error) {
-	//TODO implement me
-	panic("implement me")
+	dao := dao2.NewCartDao(global.DB)
+	res, err := dao.Get(ctx, dao2.CartBase{UserId: req.UserId, GoodsId: req.GoodsId})
+	if err != nil {
+		return nil, err
+	}
+
+	if err = dao.Update(ctx, dao2.CartUpdate{
+		ID:       int32(res.ID),
+		UserId:   res.UserID,
+		GoodsId:  res.GoodsID,
+		GoodsNum: res.Nums + req.GoodsNum,
+	}); err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
 }
 
 func (c CartService) mustEmbedUnimplementedCartServer() {

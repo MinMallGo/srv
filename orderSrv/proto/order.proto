@@ -51,12 +51,22 @@ message OrderDetailResp{
   string Status = 4;
   string TradeNo = 5;
   string SubjectTitle = 6;
-  double OrderPrice = 7;
-  double FinalPrice = 8;
+  float OrderPrice = 7;
+  float FinalPrice = 8;
   string Address = 9;
   string RecipientName = 10;
   string RecipientMobile = 11;
   string Message = 12;
   string Snapshot = 13;
+  repeated GoodsInfo goods = 14;
 }
 
+message GoodsInfo {
+  int32 OrderID = 1;
+  string OrderSN = 2;
+  int32 GoodsID = 3;
+  float GoodsPrice = 4;
+  float PayPrice = 5;
+  string GoodsName = 6;
+  int32 Num = 7;
+}

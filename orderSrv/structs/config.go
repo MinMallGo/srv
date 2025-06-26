@@ -1,10 +1,11 @@
 package structs
 
 type ServerConfig struct {
-	MySQL  MySQLConfig  `mapstructure:"mysql"`
-	Consul ConsulConfig `mapstructure:"consul"`
-	Name   string       `mapstructure:"name"`
-	Redis  RedisCnf     `mapstructure:"redis"`
+	MySQL    MySQLConfig  `mapstructure:"mysql"`
+	Consul   ConsulConfig `mapstructure:"consul"`
+	Name     string       `mapstructure:"name"`
+	Redis    RedisCnf     `mapstructure:"redis"`
+	CrossSrv CrossService `mapstructure:"cross_srv" json:"cross_srv"`
 }
 
 type MySQLConfig struct {
@@ -35,4 +36,10 @@ type RedisCnf struct {
 	Host     string `mapstructure:"host" json:"host"`
 	Port     int    `mapstructure:"port" json:"port"`
 	Password string `mapstructure:"password" json:"password"`
+}
+
+// CrossService 跨服务的配置
+type CrossService struct {
+	GoodsSrv  string `json:"goods_srv"`
+	Inventory string `json:"inventory"`
 }

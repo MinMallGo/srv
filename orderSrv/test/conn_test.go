@@ -15,7 +15,7 @@ var (
 func SrvInit() *grpc.ClientConn {
 	var err error
 	SrvConn, err = grpc.NewClient(
-		fmt.Sprintf(`consul://%s:%d/%s?wait=14s`, "192.168.3.5", 8500, "inventory-service"),
+		fmt.Sprintf(`consul://%s:%d/%s?wait=14s`, "192.168.3.5", 8500, "order-service"),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy": "round_robin"}`),
 	)
