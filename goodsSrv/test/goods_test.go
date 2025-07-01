@@ -48,7 +48,7 @@ func TestGoodsDetail(t *testing.T) {
 func TestGoodsCRUD(t *testing.T) {
 	s := proto.NewGoodsClient(SrvInit())
 	defer SrvClose()
-	goods, err := s.CreateGods(context.Background(), &proto.CreateGoodsInfo{
+	goods, err := s.CreateGoods(context.Background(), &proto.CreateGoodsInfo{
 		CategoryId:      1,
 		BrandId:         1,
 		OnSale:          false,
