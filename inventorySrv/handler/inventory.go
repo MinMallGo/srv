@@ -13,6 +13,7 @@ import (
 	"srv/inventorySrv/global"
 	"srv/inventorySrv/model"
 	"srv/inventorySrv/proto/gen"
+	"srv/inventorySrv/structs"
 )
 
 type InventoryServer struct {
@@ -59,47 +60,30 @@ func (i InventoryServer) SetStock(ctx context.Context, info *proto.SetInfo) (*em
 }
 
 func (i InventoryServer) SellStock(ctx context.Context, info *proto.MultipleInfo) (*emptypb.Empty, error) {
-	stocks := make([]Stocks, 0, len(info.Sell))
+	stocks := make([]structs.Stocks, 0, len(info.Sell))
 	for _, data := range info.Sell {
-		stocks = append(stocks, Stocks{
+		stocks = append(stocks, structs.Stocks{
 			GoodsID: data.GoodsId,
 			Stock:   data.Stock,
 		})
 	}
 
-	//// 使用悲观锁来进行更新。test ✅
-	//pessimism := func() (*emptypb.Empty, error) {
-	//	consistency := GetConsistency(0)
-	//	err := consistency.Decr(stocks...)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	return &emptypb.Empty{}, nil
-	//}
-	//// 使用悲观锁来进行更新。test ✅
+	//// 使用悲观锁来进行更新。 GetConsistency(0) 。 test ✅
 
-	//// 使用乐观锁来进行更新
+	//// 使用乐观锁来进行更新 GetConsistency(1)
 	//// 😒❌ 这里真的要注意，因为数据竞争太大了，如果导致重试的次数过少的话，会大大影响成功率
-	//optimism := func() (*emptypb.Empty, error) {
-	//	consistency := GetConsistency(1)
-	//	err := consistency.Decr(stocks...)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	return &emptypb.Empty{}, nil
-	//}
-	//return optimism()
-	// 使用分布式锁进行更新
-	redLock := func() (*emptypb.Empty, error) {
-		consistency := GetConsistency(99)
-		err := consistency.Decr(stocks...)
-		if err != nil {
-			return nil, err
-		}
-		return &emptypb.Empty{}, nil
-	}
-	return redLock()
 
+	//  使用分布式锁进行更新： GetConsistency(99)。 test ✅
+	if err := GetConsistency(99).Decr(stocks...); err != nil {
+		return nil, err
+	}
+
+	// 创建订单详细
+	if err := dao2.NewOrderDetailDao(global.DB).Create(info.OrderSN, stocks); err != nil {
+		return nil, err
+	}
+
+	return &emptypb.Empty{}, nil
 }
 
 func (i InventoryServer) GetStock(ctx context.Context, info *proto.GetInfo) (*proto.StockResp, error) {
