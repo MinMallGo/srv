@@ -27,3 +27,18 @@ func (g *GormList) Scan(value interface{}) error {
 func (g GormList) Value() (driver.Value, error) {
 	return json.Marshal(g)
 }
+
+type Details struct {
+	GoodsID  int32
+	GoodsNum int32
+}
+
+type GoodsDetails []Details
+
+func (g *GoodsDetails) Scan(value interface{}) error {
+	return json.Unmarshal(value.([]byte), g)
+}
+
+func (g GoodsDetails) Value() (driver.Value, error) {
+	return json.Marshal(g)
+}

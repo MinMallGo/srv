@@ -20,7 +20,8 @@ message GetInfo {
 }
 
 message MultipleInfo {
-  repeated SetInfo sell = 1;
+  string OrderSN = 1;
+  repeated SetInfo sell = 2;
 }
 
 message StockResp {
