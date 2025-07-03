@@ -12,6 +12,7 @@ import (
 	dao2 "srv/inventorySrv/dao"
 	"srv/inventorySrv/global"
 	"srv/inventorySrv/model"
+	"srv/inventorySrv/structs"
 	"strconv"
 	"time"
 )
@@ -22,16 +23,10 @@ var (
 	RedisLock = 2
 )
 
-type Stocks struct {
-	GoodsID int32
-	Stock   int32
-	Version int32
-}
-
 type Consistency interface {
-	//Select(...Stocks) error
-	Decr(...Stocks) error // 减少库存
-	Incr(...Stocks) error // 归还库存
+	//Select(...structs.Stocks) error
+	Decr(...structs.Stocks) error // 减少库存
+	Incr(...structs.Stocks) error // 归还库存
 }
 
 func GetConsistency(choice int) Consistency {
@@ -47,14 +42,14 @@ func GetConsistency(choice int) Consistency {
 
 // 封装 1. 悲观锁  2. 乐观锁 3. redlock
 
-// 悲观锁
+// PessimismLock 悲观锁
 type PessimismLock struct{}
 
 func NewPessimismLock() *PessimismLock {
 	return &PessimismLock{}
 }
 
-func (o *PessimismLock) Decr(info ...Stocks) error {
+func (o *PessimismLock) Decr(info ...structs.Stocks) error {
 	err := global.DB.Transaction(func(tx *gorm.DB) error {
 		// 用于快速IN查询
 		goods := make([]int32, 0, len(info))
@@ -100,9 +95,28 @@ func (o *PessimismLock) Decr(info ...Stocks) error {
 	}
 	return nil
 }
-func (o *PessimismLock) Incr(...Stocks) error { return nil }
+func (o *PessimismLock) Incr(info ...structs.Stocks) error {
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		decr := make([]dao2.Stock, 0, len(info))
+		for _, v := range info {
+			decr = append(decr, dao2.Stock{GoodsId: v.GoodsID, Stocks: v.Stock})
+		}
 
-// 乐观锁
+		// 这里来构造update
+		if dao2.NewInventoryDao(tx).StockIncrease(&decr) != nil {
+			zap.L().Info(`<SellStock>.StockDecrease() != nil`)
+			return status.Error(codes.Internal, "库存扣减失败")
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// OptimismLock 乐观锁
 type OptimismLock struct{}
 
 func NewOptimismLock() *OptimismLock {
@@ -110,7 +124,7 @@ func NewOptimismLock() *OptimismLock {
 }
 
 // Decr 扣减库存，如果失败就重试。没拿到就sleep rand.Intn(15)
-func (o *OptimismLock) Decr(info ...Stocks) error {
+func (o *OptimismLock) Decr(info ...structs.Stocks) error {
 	// 1. 先进行数据的查询，额这里是不是还需要配置要重试的次数之类的东西
 	// 2. 配置等待的时间
 	// 3.
@@ -185,7 +199,26 @@ func (o *OptimismLock) Decr(info ...Stocks) error {
 
 	return nil
 }
-func (o *OptimismLock) Incr(...Stocks) error { return nil }
+func (o *OptimismLock) Incr(info ...structs.Stocks) error {
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		decr := make([]dao2.Stock, 0, len(info))
+		for _, v := range info {
+			decr = append(decr, dao2.Stock{GoodsId: v.GoodsID, Stocks: v.Stock})
+		}
+
+		// 这里来构造update
+		if dao2.NewInventoryDao(tx).StockIncrease(&decr) != nil {
+			zap.L().Info(`<SellStock>.StockDecrease() != nil`)
+			return status.Error(codes.Internal, "库存扣减失败")
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // RedLock 红锁
 type RedLock struct{}
@@ -194,7 +227,7 @@ func NewRedLock() *RedLock {
 	return &RedLock{}
 }
 
-func (o *RedLock) Decr(info ...Stocks) error {
+func (o *RedLock) Decr(info ...structs.Stocks) error {
 	// 1. 应该是查询的时候先获取到锁，然后查询完成之后释放锁，中途不需要加乐观锁或者其他什么东西的
 	// Obtain a new mutex by using the same name for all instances wanting the
 	// same lock.
@@ -238,12 +271,12 @@ func (o *RedLock) Decr(info ...Stocks) error {
 		infos := &[]model.Inventory{}
 		res = res.Find(&infos)
 		if res.Error != nil {
-			zap.L().Info("(o *RedLock) Decr(info ...Stocks) error", zap.Error(res.Error))
+			zap.L().Info("(o *RedLock) Decr(info ...structs.Stocks) error", zap.Error(res.Error))
 			return status.Error(codes.Internal, res.Error.Error())
 		}
 
 		if res.RowsAffected != int64(len(goods)) {
-			zap.L().Info(`<(o *RedLock) Decr(info ...Stocks) error>.RowsAffected != int64(len(goods))`)
+			zap.L().Info(`<(o *RedLock) Decr(info ...structs.Stocks) error>.RowsAffected != int64(len(goods))`)
 			return status.Error(codes.Internal, "库存不足")
 		}
 
@@ -277,4 +310,23 @@ func (o *RedLock) Decr(info ...Stocks) error {
 
 	return nil
 }
-func (o *RedLock) Incr(...Stocks) error { return nil }
+func (o *RedLock) Incr(info ...structs.Stocks) error {
+	err := global.DB.Transaction(func(tx *gorm.DB) error {
+		decr := make([]dao2.Stock, 0, len(info))
+		for _, v := range info {
+			decr = append(decr, dao2.Stock{GoodsId: v.GoodsID, Stocks: v.Stock})
+		}
+
+		// 这里来构造update
+		if dao2.NewInventoryDao(tx).StockIncrease(&decr) != nil {
+			zap.L().Info(`<SellStock>.StockDecrease() != nil`)
+			return status.Error(codes.Internal, "库存扣减失败")
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
