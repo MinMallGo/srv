@@ -2,6 +2,8 @@ package handler
 
 import (
 	"context"
+	rmq_client "github.com/apache/rocketmq-clients/golang/v5"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
@@ -10,6 +12,7 @@ import (
 	"srv/orderSrv/global"
 	"srv/orderSrv/model"
 	proto "srv/orderSrv/proto/gen"
+	"time"
 )
 
 type OrderService struct {
@@ -22,6 +25,32 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 	// TODO 分布式事务怎么保证一致性
 	// 查询购物车里面勾选的物品
 	// 	确实jd是读取购物车里面的勾选信息
+
+	// 分布式事务怎么保证一致性 ： 消息队列的事务消息
+	producer, err := NewTrxMsg()
+	// TODO 还需要看下这里会有什么坑
+	defer producer.GracefulStop()
+	// 分布式事务怎么保证一致性 ： 消息队列的事务消息
+	// 先生成订单唯一编号
+	orderSN := global.OrderSN(int(req.UserID))
+	zap.L().Info("<<orderSN>>", zap.String("orderSN", orderSN))
+	// 这里是先发送一个办消息，然后后面的本地事务再发送 trx.Commit or trx.Rollback
+	trx := producer.BeginTransaction()
+	msg := &rmq_client.Message{
+		Topic: TrxTopic,
+		Body:  []byte(orderSN),
+	}
+	msg.SetTag("returnStock")
+	msg.SetKeys("order_sn", orderSN)
+
+	receipts, err := producer.SendWithTransaction(ctx, msg, trx)
+	if err != nil {
+		zap.L().Error("发送半消息失败", zap.Error(err))
+		return nil, status.Errorf(codes.Internal, "内部错误")
+	}
+
+	zap.L().Info("发送半消息成功", zap.Any("receipts", receipts))
+
 	list, err := dao2.NewCartDao(global.DB).CartList(ctx, dao2.CartBase{UserId: req.UserID})
 	if err != nil {
 		return nil, err
@@ -47,6 +76,8 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 		Id: goodsIds,
 	})
 	if err != nil {
+		zap.L().Error("查询商品服务失败", zap.Error(err))
+		trx.RollBack()
 		return nil, err
 	}
 
@@ -55,8 +86,10 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 	}
 
 	// 库存扣减
-	_, err = global.CrossSrv.Inventory.SellStock(context.Background(), &proto.MultipleInfo{Sell: sell})
+	_, err = global.CrossSrv.Inventory.SellStock(context.Background(), &proto.MultipleInfo{OrderSN: orderSN, Sell: sell})
 	if err != nil {
+		zap.L().Error("库存扣减失败", zap.Error(err))
+		trx.RollBack()
 		return nil, err
 	}
 
@@ -65,7 +98,7 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 	orderGoods := make([]model.OrderGoods, 0)
 	var total_price float32 = 0
 	subject := ""
-	orderSN := global.OrderSN(int(req.UserID))
+
 	for _, datum := range batchGoods.Data {
 		price := datum.ShopPrice * float32(goodsMap[datum.Id])
 		total_price += price
@@ -97,7 +130,8 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 		RecipientMobile: req.RecipientMobile,
 		Message:         req.Message,
 	}
-
+	time.Sleep(time.Second * 200)
+	panic(123)
 	var orderId int
 	err = global.DB.Transaction(func(tx *gorm.DB) error {
 		orderId, err = dao2.NewOrderDao(tx).Create(order)
@@ -125,9 +159,14 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 
 		return nil
 	})
+	// 这里，判断事务是否成功，err != nil 就需要使用
 	if err != nil {
+		zap.L().Error("本地事务提交失败", zap.Error(err))
+		trx.RollBack()
 		return nil, err
 	}
+	// 提交全消息
+	trx.Commit()
 
 	return &proto.CreateResp{
 		OrderId: int32(orderId),

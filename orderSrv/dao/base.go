@@ -9,6 +9,11 @@ import (
 	"runtime"
 )
 
+var (
+	DBErr      error = errors.New("数据库错误")
+	DBCheckErr error = errors.New("操作失败")
+)
+
 func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {
 	return func(db *gorm.DB) *gorm.DB {
 		if page <= 0 {
@@ -35,7 +40,7 @@ func HandleError(res *gorm.DB, expectAffect int) error {
 			zap.String("caller", callerFunc(2)), // skip=2 是更常见的调用层级
 			zap.Error(res.Error),
 		)
-		return status.Error(codes.Internal, "数据库错误")
+		return status.Error(codes.Internal, DBErr.Error())
 	}
 
 	if expectAffect > 0 && res.RowsAffected != int64(expectAffect) {
@@ -44,7 +49,7 @@ func HandleError(res *gorm.DB, expectAffect int) error {
 			zap.Int("expected", expectAffect),
 			zap.Int64("actual", res.RowsAffected),
 		)
-		return status.Error(codes.Internal, "操作失败")
+		return status.Error(codes.Internal, DBCheckErr.Error())
 	}
 
 	return nil
