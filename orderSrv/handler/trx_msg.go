@@ -11,14 +11,16 @@ import (
 	"os"
 	"srv/orderSrv/dao"
 	"srv/orderSrv/global"
+	"time"
 )
 
 const (
-	Endpoint   = "192.168.3.5:8081"
-	AccessKey  = "xxxxxx"
-	SecretKey  = "xxxxxx"
-	TrxTopic   = "trx_msg_rollback_stock"
-	DelayTopic = "xxxxxx"
+	Endpoint    = "192.168.3.5:8081"
+	AccessKey   = "xxxxxx"
+	SecretKey   = "xxxxxx"
+	TrxTopic    = "trx_msg_rollback_stock"
+	DelayTopic  = "xxxxxx"
+	ExpireTopic = "order_delay_cancel"
 )
 
 func checker(msg *rmq_client.MessageView) rmq_client.TransactionResolution {
@@ -83,4 +85,52 @@ func NewTrxMsg() (rmq_client.Producer, error) {
 	}
 
 	return producer, err
+}
+
+func SendOrderDelayMsg(orderSN string) error {
+	// log to console
+	os.Setenv("mq.consoleAppender.enabled", "true")
+	rmq_client.ResetLogger()
+	// In most case, you don't need to create many producers, singleton pattern is more recommended.
+	producer, err := rmq_client.NewProducer(&rmq_client.Config{
+		Endpoint: Endpoint,
+		Credentials: &credentials.SessionCredentials{
+			AccessKey:    AccessKey,
+			AccessSecret: SecretKey,
+		},
+	},
+		rmq_client.WithTopics(ExpireTopic),
+	)
+	if err != nil {
+		zap.L().Error("初始化延时消息失败", zap.Error(err))
+		return status.Error(codes.Internal, err.Error())
+	}
+	// start producer
+	err = producer.Start()
+	if err != nil {
+		zap.L().Error("启动延时消息失败", zap.Error(err))
+		return status.Error(codes.Internal, err.Error())
+	}
+	// graceful stop producer
+	defer producer.GracefulStop()
+
+	// new a message
+	msg := &rmq_client.Message{
+		Topic: ExpireTopic,
+		Body:  []byte(orderSN),
+	}
+	// set keys and tag
+	msg.SetKeys("order_sn", orderSN)
+	msg.SetTag("order")
+	// set delay timestamp
+	msg.SetDelayTimestamp(time.Now().Add(time.Second * 30))
+	// send message in sync
+	resp, err := producer.Send(context.TODO(), msg)
+	if err != nil {
+		zap.L().Error("发送订单延时取消消息失败：", zap.Error(err))
+	}
+
+	zap.L().Info("发送订单延时取消消息成功", zap.Any("resp", resp))
+
+	return nil
 }

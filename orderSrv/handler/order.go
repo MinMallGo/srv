@@ -12,12 +12,14 @@ import (
 	"srv/orderSrv/global"
 	"srv/orderSrv/model"
 	proto "srv/orderSrv/proto/gen"
-	"time"
 )
 
 type OrderService struct {
 	proto.UnimplementedOrderServer
 }
+
+// TODO 这里要修改一下，变成不在这里进行库存的扣减，而是通过成功发送事务消息，在库存侧监听来达到目的
+// 同时这样也方面扩展，有新的服务需要加入进来就订阅然后执行自己的任务就行
 
 func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq) (*proto.CreateResp, error) {
 	// 跨服务调用，这里会用到库存服务，以及商品服务，
@@ -130,8 +132,7 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 		RecipientMobile: req.RecipientMobile,
 		Message:         req.Message,
 	}
-	time.Sleep(time.Second * 200)
-	panic(123)
+
 	var orderId int
 	err = global.DB.Transaction(func(tx *gorm.DB) error {
 		orderId, err = dao2.NewOrderDao(tx).Create(order)
@@ -143,17 +144,20 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 			orderGoods[i].OrderId = int32(orderId)
 		}
 
-		err = dao2.NewOrderGoodsDao(tx).BatchCreate(orderGoods)
-		if err != nil {
+		if err = dao2.NewOrderGoodsDao(tx).BatchCreate(orderGoods); err != nil {
 			return err
 		}
 
 		// 从购物车里面移除购买的商品
-		err = dao2.NewCartDao(tx).Delete(context.Background(), dao2.CartMultiGoods{
+		if err = dao2.NewCartDao(tx).Delete(context.Background(), dao2.CartMultiGoods{
 			UserId:  req.UserID,
 			GoodsId: goodsIds,
-		})
-		if err != nil {
+		}); err != nil {
+			return err
+		}
+
+		// 这里加一个发送订单取消的延时消息
+		if err = SendOrderDelayMsg(orderSN); err != nil {
 			return err
 		}
 
