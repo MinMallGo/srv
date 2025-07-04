@@ -33,8 +33,8 @@ func main() {
 	initialize.InitZap()
 	initialize.InitConfig()
 	initialize.InitDB()
-	initialize.InitRedLock()   // 初始化分布式锁
-	initialize.InitSubscribe() // 订阅消息保证数据最终一致性
+	initialize.InitRedLock()      // 初始化分布式锁
+	go initialize.InitSubscribe() // 订阅消息保证数据最终一致性
 	flag.Parse()
 	if *port == 0 {
 		*port = global.GetPort()
