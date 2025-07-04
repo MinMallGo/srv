@@ -23,7 +23,8 @@ const (
 	AccessKey     = "xxxxxx"
 	SecretKey     = "xxxxxx"
 	TrxTopic      = "trx_msg_rollback_stock"
-	ConsumerGroup = "trx_msg_rollback_stock"
+	ExpireTopic   = "order_delay_cancel"
+	ConsumerGroup = "consumer_trx_msg_rollback_stock"
 )
 
 var (
@@ -52,7 +53,8 @@ func InitSubscribe() {
 	},
 		golang.WithAwaitDuration(awaitDuration),
 		golang.WithSubscriptionExpressions(map[string]*golang.FilterExpression{
-			TrxTopic: golang.SUB_ALL,
+			TrxTopic:    golang.SUB_ALL,
+			ExpireTopic: golang.SUB_ALL,
 		}),
 	)
 	if err != nil {
