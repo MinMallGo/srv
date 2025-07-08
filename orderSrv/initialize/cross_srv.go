@@ -6,14 +6,12 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
 	"srv/orderSrv/global"
 	proto "srv/orderSrv/proto/gen"
 )
 
 // InitCrossSrv 连接第三方服务
 func InitCrossSrv() {
-	log.Printf("%#v", global.SrvConfig.CrossSrv)
 	ConnGoods()
 	ConnStock()
 }

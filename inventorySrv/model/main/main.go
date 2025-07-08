@@ -37,7 +37,7 @@ func migrate() {
 	if err != nil {
 		panic(fmt.Sprintf("autoMigrate failed: %v", err))
 	}
-	err = db.AutoMigrate(&model.Inventory{})
+	err = db.AutoMigrate(&model.Inventory{}, &model.OrderHistory{})
 	if err != nil {
 		panic(fmt.Sprintf("autoMigrate failed: %v", err))
 	}
