@@ -112,7 +112,7 @@ func InitSubscribe() {
 			_ = dao2.NewOrderDetailDao(global.DB).UpdateStatus(orderSN)
 
 			// 如果是找到了，则选择归还，成功则提交，否则不ack
-			simpleConsumer.Ack(context.TODO(), mv)
+			_ = simpleConsumer.Ack(context.TODO(), mv)
 			fmt.Println(mv)
 		}
 		fmt.Println("wait a moment")

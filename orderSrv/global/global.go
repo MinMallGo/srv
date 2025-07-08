@@ -1,6 +1,7 @@
 package global
 
 import (
+	"context"
 	"github.com/go-redsync/redsync/v4"
 	"gorm.io/gorm"
 	proto "srv/orderSrv/proto/gen"
@@ -16,3 +17,4 @@ var SrvConfig = &structs.ServerConfig{}
 var DB *gorm.DB
 var RedLock *redsync.Redsync = &redsync.Redsync{}
 var CrossSrv = &CrossServer{}
+var TraceShutdownFunc func(context.Context) error

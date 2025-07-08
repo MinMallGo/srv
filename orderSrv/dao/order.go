@@ -2,6 +2,8 @@ package dao
 
 import (
 	"context"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/trace"
 	"gorm.io/gorm"
 	"srv/orderSrv/model"
 	proto "srv/orderSrv/proto/gen"
@@ -32,12 +34,20 @@ type Order struct {
 	Goods []*model.OrderGoods `gorm:"foreignkey:OrderId;references:ID"`
 }
 
-func (r *OrderDao) Create(param *model.Order) (int, error) {
+func (r *OrderDao) Create(ctx context.Context, param *model.Order) (int, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.String("service.name", "<OrderDao.GetList>"))
+	defer span.End()
+
 	res := r.db.Model(&model.Order{}).Create(&param)
 	return int(param.ID), HandleError(res, 1)
 }
 
 func (r *OrderDao) GetList(ctx context.Context, req OrderListReq) (*proto.OrderListResp, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.String("service.name", "<OrderDao.GetList>"))
+	defer span.End()
+
 	list := []Order{}
 	var count int64
 	res := r.db.Model(&model.Order{})
@@ -100,6 +110,10 @@ func (r *OrderDao) GetList(ctx context.Context, req OrderListReq) (*proto.OrderL
 }
 
 func (r *OrderDao) GetDetail(ctx context.Context, req OrderDetailReq) (*Order, error) {
+	span := trace.SpanFromContext(ctx)
+	span.SetAttributes(attribute.String("service.name", "<OrderDao.GetDetail>"))
+	defer span.End()
+
 	order := &Order{}
 	query := r.db.Model(&model.Order{}).Preload("Goods")
 	if req.OrderId > 0 {

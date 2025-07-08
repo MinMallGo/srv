@@ -2,7 +2,10 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	rmq_client "github.com/apache/rocketmq-clients/golang/v5"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -22,6 +25,11 @@ type OrderService struct {
 // 同时这样也方面扩展，有新的服务需要加入进来就订阅然后执行自己的任务就行
 
 func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq) (*proto.CreateResp, error) {
+	tracer := otel.Tracer("test-tracer") // 配置
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, fmt.Sprintf("CreateOrder"))
+	defer span.End()
+
 	// 跨服务调用，这里会用到库存服务，以及商品服务，
 	// 通过引入其他服务的proto，然后连接客户端，然后再进行通信
 	// TODO 分布式事务怎么保证一致性
@@ -37,6 +45,9 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 	orderSN := global.OrderSN(int(req.UserID))
 	zap.L().Info("<<orderSN>>", zap.String("orderSN", orderSN))
 	// 这里是先发送一个办消息，然后后面的本地事务再发送 trx.Commit or trx.Rollback
+
+	ctx, childSpan := tracer.Start(ctx, "SendHalf-Message")
+
 	trx := producer.BeginTransaction()
 	msg := &rmq_client.Message{
 		Topic: TrxTopic,
@@ -52,8 +63,11 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 	}
 
 	zap.L().Info("发送半消息成功", zap.Any("receipts", receipts))
+	childSpan.End()
 
+	ctx, cartSpan := tracer.Start(ctx, "GetCartList")
 	list, err := dao2.NewCartDao(global.DB).CartList(ctx, dao2.CartBase{UserId: req.UserID})
+	cartSpan.End()
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +87,8 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 			Stock:   v.Nums,
 		})
 	}
+
+	ctx, batchSpan := tracer.Start(ctx, "GetGoodsBatch")
 	// 查询商品服务，获取查看库存是否足够
 	batchGoods, err := global.CrossSrv.Goods.BatchGetGoods(context.Background(), &proto.BatchGoodsInfo{
 		Id: goodsIds,
@@ -82,13 +98,16 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 		trx.RollBack()
 		return nil, err
 	}
+	batchSpan.End()
 
 	if len(batchGoods.Data) == 0 || len(batchGoods.Data) != len(goodsMap) {
 		return nil, status.Error(codes.NotFound, "请选择正确的商品")
 	}
 
+	ctx, sellSpan := tracer.Start(ctx, "SellStock")
 	// 库存扣减
 	_, err = global.CrossSrv.Inventory.SellStock(context.Background(), &proto.MultipleInfo{OrderSN: orderSN, Sell: sell})
+	sellSpan.End()
 	if err != nil {
 		zap.L().Error("库存扣减失败", zap.Error(err))
 		trx.RollBack()
@@ -135,7 +154,7 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 
 	var orderId int
 	err = global.DB.Transaction(func(tx *gorm.DB) error {
-		orderId, err = dao2.NewOrderDao(tx).Create(order)
+		orderId, err = dao2.NewOrderDao(tx).Create(ctx, order)
 		log.Println("Create order ID is :", orderId)
 		if err != nil {
 			return err
@@ -144,10 +163,11 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 			orderGoods[i].OrderId = int32(orderId)
 		}
 
-		if err = dao2.NewOrderGoodsDao(tx).BatchCreate(orderGoods); err != nil {
+		if err = dao2.NewOrderGoodsDao(tx).BatchCreate(ctx, orderGoods); err != nil {
 			return err
 		}
 
+		ctx, cartSpan = tracer.Start(ctx, "deleteCart")
 		// 从购物车里面移除购买的商品
 		if err = dao2.NewCartDao(tx).Delete(context.Background(), dao2.CartMultiGoods{
 			UserId:  req.UserID,
@@ -155,6 +175,7 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 		}); err != nil {
 			return err
 		}
+		cartSpan.End()
 
 		// 这里加一个发送订单取消的延时消息
 		if err = SendOrderDelayMsg(orderSN); err != nil {
@@ -179,7 +200,16 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 }
 
 func (o OrderService) GetList(ctx context.Context, req *proto.OrderListReq) (*proto.OrderListResp, error) {
+	tracer := otel.Tracer("test-tracer") // 配置
+	var span trace.Span
+	ctx, span = tracer.Start(ctx, fmt.Sprintf("span-OrderService.GetList"))
+	defer span.End()
+	//span := trace.SpanFromContext(ctx)
+	//span.SetAttributes(attribute.String("service.name", "<GetList>"))
+	//defer span.End()
+
 	res, err := dao2.NewOrderDao(global.DB).GetList(ctx, dao2.OrderListReq{Page: req.Page, Size: req.PageSize, UserID: req.UserId})
+	//iSpan.End()
 	if err != nil {
 		return nil, err
 	}
@@ -187,6 +217,9 @@ func (o OrderService) GetList(ctx context.Context, req *proto.OrderListReq) (*pr
 }
 
 func (o OrderService) GetListDetail(ctx context.Context, req *proto.OrderDetailReq) (*proto.OrderDetailResp, error) {
+	tracer := otel.Tracer("test-tracer") // 配置
+	var iSpan trace.Span
+	ctx, iSpan = tracer.Start(ctx, fmt.Sprintf("span-OrderService.GetListDetail"))
 	// 参数检查
 	if req.OrderId == 0 && len(req.OrderSn) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "参数异常")
@@ -226,6 +259,7 @@ func (o OrderService) GetListDetail(ctx context.Context, req *proto.OrderDetailR
 		Snapshot:        res.Snapshot,
 		Goods:           data,
 	}
+	iSpan.End()
 
 	return resp, nil
 }
