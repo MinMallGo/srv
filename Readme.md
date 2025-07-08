@@ -65,3 +65,5 @@
 
 
 ## 链路追踪
+1. openTelemetry + jaeger
+2. [用法](https://github.com/ucdo/everydayNormalGo2/tree/main/Ladon/tracer)
