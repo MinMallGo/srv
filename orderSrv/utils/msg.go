@@ -1,4 +1,4 @@
-package handler
+package utils
 
 import (
 	"context"
@@ -96,7 +96,7 @@ func SendTrxMsg(ctx context.Context, product rmq_client.Producer, topic, msg str
 	if err != nil {
 		return MQResult{}, err
 	}
-	return MQResult{Trx: trx, Receipt: resp}, nil
+	return MQResult{Trx: trx, Product: product, Receipt: resp}, nil
 }
 
 func SendOrderDelayMsg(orderSN string) error {

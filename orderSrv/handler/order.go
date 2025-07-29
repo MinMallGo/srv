@@ -5,17 +5,31 @@ import (
 	"fmt"
 	rmq_client "github.com/apache/rocketmq-clients/golang/v5"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gorm.io/gorm"
-	"log"
 	dao2 "srv/orderSrv/dao"
 	"srv/orderSrv/global"
 	"srv/orderSrv/model"
 	proto "srv/orderSrv/proto/gen"
+	"srv/orderSrv/service"
+	"srv/orderSrv/utils"
 )
+
+type OrderMsg struct {
+	OrderSN string      `json:"orderSN"`
+	OrderID string      `json:"orderID"`
+	UserID  string      `json:"userId"`
+	Goods   []GoodsInfo `json:"goods"`
+}
+
+type GoodsInfo struct {
+	GoodsID uint64 `json:"goodsID"`
+	GoodsSN string `json:"goodsSN"`
+}
 
 type OrderService struct {
 	proto.UnimplementedOrderServer
@@ -37,7 +51,11 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 	// 	确实jd是读取购物车里面的勾选信息
 
 	// 分布式事务怎么保证一致性 ： 消息队列的事务消息
-	producer, err := NewTrxMsg()
+	res, err := NewTrxMsg()
+	if err != nil {
+		return nil, err
+	}
+	producer := res.Product
 	// TODO 还需要看下这里会有什么坑
 	defer producer.GracefulStop()
 	// 分布式事务怎么保证一致性 ： 消息队列的事务消息
@@ -155,14 +173,14 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 	var orderId int
 	err = global.DB.Transaction(func(tx *gorm.DB) error {
 		orderId, err = dao2.NewOrderDao(tx).Create(ctx, order)
-		log.Println("Create order ID is :", orderId)
+		zap.L().Info(fmt.Sprintf("Create order ID is :%d", orderId))
 		if err != nil {
 			return err
 		}
 		for i := range orderGoods {
 			orderGoods[i].OrderId = int32(orderId)
 		}
-
+		// 批量创建订单商品
 		if err = dao2.NewOrderGoodsDao(tx).BatchCreate(ctx, orderGoods); err != nil {
 			return err
 		}
@@ -197,6 +215,30 @@ func (o OrderService) CreateOrder(ctx context.Context, req *proto.CreateOrderReq
 		OrderId: int32(orderId),
 		OrderSn: orderSN,
 	}, nil
+}
+
+// 正常的半消息事务应该是这样的：
+// 本地事务在启动之前，就启动一个半事务消息，然后本地事务完成之后，提交这个半消息
+// 然后订单创建的本地应该：订阅消息订单回滚的消息队列，然后收到消息之后进行回滚操作
+// 商品库存侧：订阅这个半事务消息的队列，然后进行业务操作，同时需要监听一个库存回滚的队列，然后进行库存回滚
+// 其他业务应该也是。
+// todo 改一下吧，这里改成只调用，而不是写太多的业务逻辑在这里面
+
+func (o OrderService) CreateOrder2(ctx context.Context, req *proto.CreateOrderReq) (*proto.CreateResp, error) {
+	// 需要解耦一下代码
+	// 将发送消息封装一下
+	// 将链路追踪封装一下
+	// 封装一下事务发送
+	tracer := otel.Tracer("order-tracer") // 配置
+	ctx, span := tracer.Start(ctx, "CreateOrder")
+	defer span.End()
+
+	return utils.WithSpan[*proto.CreateResp](ctx, tracer, "create_order", []attribute.KeyValue{
+		attribute.Int("user_id", int(req.UserID)),
+	}, func(ctx context.Context) (*proto.CreateResp, error) {
+		// 查询消息调用service里面的内容
+		return service.CreateOrder(ctx, tracer, req)
+	})
 }
 
 func (o OrderService) GetList(ctx context.Context, req *proto.OrderListReq) (*proto.OrderListResp, error) {

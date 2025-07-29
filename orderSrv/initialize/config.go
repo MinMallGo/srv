@@ -33,7 +33,7 @@ func InitConfig() {
 	if debug {
 		configName = "config_debug.json"
 	}
-
+	//curPath = `c:\ezgo\srv\orderSrv`
 	file, err := os.ReadFile(filepath.Join(curPath, configName))
 	if err != nil {
 		zap.L().Fatal("[InitConfig] 读取nacos配置文件失败:", zap.Error(err))

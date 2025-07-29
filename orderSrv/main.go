@@ -41,6 +41,7 @@ func main() {
 	log.Printf("%#v\n", global.SrvConfig)
 	initialize.InitCrossSrv() // 初始化跨服务调用的连接
 	initialize.InitTracing()  // 初始化链路追踪
+	// TODO 添加一个订阅消息失败以及支付成功的队列
 
 	flag.Parse()
 	if *port == 0 {
