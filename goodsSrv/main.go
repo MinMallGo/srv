@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"go.uber.org/zap"
+	"goodsSrv/global"
+	"goodsSrv/handler"
+	"goodsSrv/initialize"
+	"goodsSrv/proto/gen"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/health"
@@ -14,10 +18,6 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
-	"srv/goodsSrv/global"
-	"srv/goodsSrv/handler"
-	"srv/goodsSrv/initialize"
-	"srv/goodsSrv/proto/gen"
 	"syscall"
 )
 
@@ -42,7 +42,7 @@ func main() {
 	client := initialize.RegisterConsul(&initialize.RegArgs{
 		Name:    global.SrvConfig.Name,
 		ID:      uid,
-		Address: "192.168.3.5",
+		Address: global.SrvConfig.Consul.HealthCheck,
 		Port:    *port,
 		Tags:    []string{"xxx"},
 	})

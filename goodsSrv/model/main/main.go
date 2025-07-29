@@ -3,10 +3,10 @@ package main
 import (
 	"crypto/sha512"
 	"fmt"
+	"goodsSrv/model"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
-	"srv/goodsSrv/model"
 )
 
 var (

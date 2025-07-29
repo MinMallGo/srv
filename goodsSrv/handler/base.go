@@ -1,9 +1,9 @@
 package handler
 
 import (
+	"goodsSrv/global"
+	"goodsSrv/model"
 	"gorm.io/gorm"
-	"srv/goodsSrv/global"
-	"srv/goodsSrv/model"
 )
 
 func Paginate(page, pageSize int) func(db *gorm.DB) *gorm.DB {

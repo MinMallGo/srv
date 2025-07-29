@@ -2,9 +2,9 @@ package test
 
 import (
 	"context"
+	"goodsSrv/proto/gen"
 	"google.golang.org/grpc"
 	"log"
-	"srv/goodsSrv/proto/gen"
 	"testing"
 )
 

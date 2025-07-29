@@ -3,12 +3,12 @@ package handler
 import (
 	"context"
 	"fmt"
+	"goodsSrv/global"
+	"goodsSrv/model"
+	proto "goodsSrv/proto/gen"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"srv/goodsSrv/global"
-	"srv/goodsSrv/model"
-	proto "srv/goodsSrv/proto/gen"
 )
 
 type GoodsServer struct {

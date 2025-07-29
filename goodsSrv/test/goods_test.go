@@ -3,8 +3,8 @@ package test
 import (
 	"context"
 	"encoding/json"
+	proto "goodsSrv/proto/gen"
 	"log"
-	proto "srv/goodsSrv/proto/gen"
 	"testing"
 )
 

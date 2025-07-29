@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/consul/api"
 	"go.uber.org/zap"
-	"srv/goodsSrv/global"
+	"goodsSrv/global"
 )
 
 type RegArgs struct {
@@ -26,7 +26,7 @@ func RegisterConsul(arg *RegArgs) *api.Client {
 		panic(err)
 	}
 	zap.S().Infoln(consulAddr)
-	health := fmt.Sprintf("%s:%d", "host.docker.internal", arg.Port)
+	health := fmt.Sprintf("%s:%d", arg.Address, arg.Port)
 	zap.S().Infoln(health)
 	zap.S().Infof("%#v", arg)
 	err = client.Agent().ServiceRegister(&api.AgentServiceRegistration{

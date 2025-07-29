@@ -1,8 +1,8 @@
 package global
 
 import (
+	"goodsSrv/structs"
 	"gorm.io/gorm"
-	"srv/goodsSrv/structs"
 )
 
 var SrvConfig = &structs.ServerConfig{}

@@ -8,11 +8,11 @@ import (
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
+	"goodsSrv/global"
+	"goodsSrv/structs"
 	"os"
 	"path"
 	"path/filepath"
-	"srv/goodsSrv/global"
-	"srv/goodsSrv/structs"
 )
 
 var (

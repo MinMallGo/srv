@@ -2,13 +2,13 @@ package initialize
 
 import (
 	"fmt"
+	"goodsSrv/global"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 	"log"
 	"os"
-	"srv/goodsSrv/global"
 	"time"
 )
 
@@ -34,7 +34,7 @@ func myLogger() logger.Interface {
 		log.New(os.Stdout, "\r\n", log.LstdFlags),
 		logger.Config{
 			SlowThreshold: time.Second,
-			LogLevel:      logger.Error,
+			LogLevel:      logger.Info,
 			Colorful:      true,
 		},
 	)

@@ -3,7 +3,7 @@ package test
 import (
 	"context"
 	"github.com/golang/protobuf/ptypes/empty"
-	proto "srv/goodsSrv/proto/gen"
+	proto "goodsSrv/proto/gen"
 	"testing"
 )
 

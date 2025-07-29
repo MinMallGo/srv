@@ -2,7 +2,7 @@ package test
 
 import (
 	"context"
-	proto "srv/goodsSrv/proto/gen"
+	proto "goodsSrv/proto/gen"
 	"testing"
 )
 
